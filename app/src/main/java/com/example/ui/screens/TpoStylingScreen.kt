@@ -93,6 +93,7 @@ import com.example.data.remote.WeatherWardrobeMatcher
 import com.example.ui.components.B2BLookbookSpecSheetCard
 import com.example.ui.components.GarmentCutoutIllustration
 import com.example.ui.components.StylebookPackingCapsuleCard
+import com.example.ui.components.showFintechToast
 import com.example.ui.theme.AtelierChampagne
 import com.example.ui.theme.AtelierCoral
 import com.example.ui.theme.AtelierDeepPlum
@@ -658,6 +659,7 @@ private fun WeatherWardrobeSuggestionCard(
             .fillMaxWidth()
             .testTag("weather_wardrobe_suggestion_card")
     ) {
+        val context = LocalContext.current
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -749,7 +751,10 @@ private fun WeatherWardrobeSuggestionCard(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         Button(
-                            onClick = onApplyBestWeatherOutfit,
+                            onClick = {
+                                onApplyBestWeatherOutfit()
+                                showFintechToast(context, "오늘의 날씨 코디가 저장되고 착용이 기록되었어요")
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AtelierSage,
                                 contentColor = Color.White
@@ -1019,6 +1024,7 @@ private fun RecommendedCoordiShowcaseCard(
             .fillMaxWidth()
             .testTag("ai_recommended_coordi_card")
     ) {
+        val context = LocalContext.current
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1123,7 +1129,10 @@ private fun RecommendedCoordiShowcaseCard(
             Spacer(modifier = Modifier.height(14.dp))
 
             Button(
-                onClick = onSaveAndWear,
+                onClick = {
+                    onSaveAndWear()
+                    showFintechToast(context, "추천 코디가 저장되고 착용 횟수가 기록되었어요")
+                },
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1186,7 +1195,11 @@ private fun SavedOutfitItemCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            IconButton(onClick = onDelete) {
+            val context = LocalContext.current
+            IconButton(onClick = {
+                onDelete()
+                showFintechToast(context, "저장된 코디가 삭제되었어요")
+            }) {
                 Icon(
                     imageVector = Icons.Default.DeleteOutline,
                     contentDescription = "코디 삭제"

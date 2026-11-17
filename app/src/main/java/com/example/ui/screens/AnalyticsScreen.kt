@@ -55,6 +55,7 @@ import androidx.compose.foundation.horizontalScroll
 import com.example.data.model.Garment
 import com.example.ui.components.B2BInventoryAuditAndEsgCard
 import com.example.ui.components.GarmentCutoutIllustration
+import com.example.ui.components.showFintechToast
 import com.example.ui.components.StitchFixBuyOrNotSimulatorCard
 import com.example.ui.components.StylebookBreakEvenTrackerCard
 import com.example.ui.components.parseHexColorSafe
@@ -218,7 +219,10 @@ fun AnalyticsScreen(
                         rank = idx + 1,
                         garment = g,
                         cutoutBitmap = cutoutBitmaps[g.id],
-                        onIncrementWear = { onIncrementWear(g) }
+                        onIncrementWear = {
+                            onIncrementWear(g)
+                            showFintechToast(context, "'${g.name}' 착용 1회가 기록되었어요")
+                        }
                     )
                 }
             }
@@ -290,9 +294,13 @@ fun AnalyticsScreen(
                             """.trimIndent()
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                             clipboard?.setPrimaryClip(ClipData.newPlainText("당근마켓 판매글", draft))
-                            copiedResaleNotice = "🥕 '${sleeper.name}' 당근마켓 판매글(추천가 ₩${String.format("%,d", suggestedResalePrice)})이 클립보드에 복사되었습니다!"
+                            copiedResaleNotice = "🥕 '${sleeper.name}' 당근마켓 판매글이 클립보드에 복사되었습니다!"
+                            showFintechToast(context, "'${sleeper.name}' 당근 판매글이 복사되었어요")
                         },
-                        onWearNow = { onIncrementWear(sleeper) }
+                        onWearNow = {
+                            onIncrementWear(sleeper)
+                            showFintechToast(context, "오늘 착용 1회가 기록되었어요")
+                        }
                     )
                 }
             }

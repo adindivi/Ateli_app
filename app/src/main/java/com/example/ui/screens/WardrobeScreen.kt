@@ -91,6 +91,7 @@ import com.example.ui.components.FriendlyReassuranceDialog
 import com.example.ui.components.GarmentCutoutIllustration
 import com.example.ui.components.ReassuranceNoticeCard
 import com.example.ui.components.ZigzagBottomSheetDragHandle
+import com.example.ui.components.showFintechToast
 import com.example.ui.components.parseHexColorSafe
 import com.example.ui.theme.AtelierChampagne
 import com.example.ui.theme.AtelierCoral
@@ -496,7 +497,10 @@ fun WardrobeScreen(
                         )
                         Spacer(modifier = Modifier.height(20.dp))
                         Button(
-                            onClick = onSeedStarterWardrobe,
+                            onClick = {
+                                onSeedStarterWardrobe()
+                                showFintechToast(context, "스타터 캡슐 옷장 9벌이 등록되었어요")
+                            },
                             shape = RoundedCornerShape(24.dp), // ZIGZAG control: 24px
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = ZigzagCtaBlack,
@@ -516,7 +520,10 @@ fun WardrobeScreen(
                 GarmentWardrobeCard(
                     garment = garment,
                     cutoutBitmap = cutoutBitmaps[garment.id],
-                    onIncrementWear = { onIncrementWear(garment) },
+                    onIncrementWear = {
+                        onIncrementWear(garment)
+                        showFintechToast(context, "'${garment.name}' 착용 1회가 기록되었어요")
+                    },
                     onDelete = { pendingDeleteGarment = garment },
                     onOpenFitting = { detailModalGarment = garment }
                 )
@@ -534,6 +541,7 @@ fun WardrobeScreen(
             onSecondaryClick = {
                 onDeleteGarment(garmentToDelete.id)
                 pendingDeleteGarment = null
+                showFintechToast(context, "옷장에서 깔끔하게 정리되었어요")
             },
             onDismissRequest = { pendingDeleteGarment = null },
             accentBadgeText = "안심 안내"

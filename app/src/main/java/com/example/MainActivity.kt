@@ -68,6 +68,7 @@ import com.example.data.local.AteliLocalDatabase
 import com.example.data.repository.WardrobeRepository
 import com.example.ui.auth.AuthScreen
 import com.example.ui.auth.signOutUser
+import com.example.ui.components.FintechFloatingToast
 import com.example.ui.screens.AiStylistChatScreen
 import com.example.ui.screens.AnalyticsScreen
 import com.example.ui.screens.TpoStylingScreen
@@ -205,7 +206,11 @@ fun AteliMainApp(
 
             Scaffold(
                 contentWindowInsets = WindowInsets.safeDrawing,
-                snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+                snackbarHost = {
+                    SnackbarHost(hostState = snackbarHostState) { data ->
+                        FintechFloatingToast(snackbarData = data)
+                    }
+                },
                 topBar = {
                     Column {
                         TopAppBar(

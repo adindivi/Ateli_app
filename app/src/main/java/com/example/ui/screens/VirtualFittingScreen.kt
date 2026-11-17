@@ -54,7 +54,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import com.example.ui.components.showFintechToast
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -122,6 +124,7 @@ fun VirtualFittingScreen(
         fitScore: Int
     ) -> Unit
 ) {
+    val context = LocalContext.current
     val profile = (profileState as? DataUiState.Success)?.data ?: UserProfile()
     val garments = (garmentsState as? DataUiState.Success)?.data ?: emptyList()
 
@@ -844,6 +847,7 @@ fun VirtualFittingScreen(
                     bodyShape.stylingTip,
                     95
                 )
+                showFintechToast(context, "피팅 코디가 저장되고 착용이 기록되었어요")
             },
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
