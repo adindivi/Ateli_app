@@ -85,7 +85,9 @@ import com.example.data.model.Garment
 import com.example.data.model.GarmentCategory
 import com.example.ui.components.AclosetGarmentDetailModal
 import com.example.ui.components.AclosetQuickAddBottomSheet
+import com.example.ui.components.FriendlyReassuranceDialog
 import com.example.ui.components.GarmentCutoutIllustration
+import com.example.ui.components.ReassuranceNoticeCard
 import com.example.ui.components.ZigzagBottomSheetDragHandle
 import com.example.ui.components.parseHexColorSafe
 import com.example.ui.theme.AtelierChampagne
@@ -128,6 +130,7 @@ fun WardrobeScreen(
     var showPhotoSheet by remember { mutableStateOf(false) }
     var showQuickAddSheet by remember { mutableStateOf(false) }
     var detailModalGarment by remember { mutableStateOf<Garment?>(null) }
+    var pendingDeleteGarment by remember { mutableStateOf<Garment?>(null) }
     var selectedBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     // Zero-permission Android Photo Picker
@@ -512,11 +515,27 @@ fun WardrobeScreen(
                     garment = garment,
                     cutoutBitmap = cutoutBitmaps[garment.id],
                     onIncrementWear = { onIncrementWear(garment) },
-                    onDelete = { onDeleteGarment(garment.id) },
+                    onDelete = { pendingDeleteGarment = garment },
                     onOpenFitting = { detailModalGarment = garment }
                 )
             }
         }
+    }
+
+    pendingDeleteGarment?.let { garmentToDelete ->
+        FriendlyReassuranceDialog(
+            title = "이 옷을 옷장에서 보낼까요?",
+            reassuranceText = "'${garmentToDelete.brand} ${garmentToDelete.name}'을(를) 삭제해도 지금까지의 착용 기록(${garmentToDelete.wearCount}회)과 가성비 리포트는 보존돼요. 언제든 다시 등록하실 수 있어요.",
+            primaryButtonText = "옷장에 그대로 두기",
+            onPrimaryClick = { pendingDeleteGarment = null },
+            secondaryButtonText = "삭제하기",
+            onSecondaryClick = {
+                onDeleteGarment(garmentToDelete.id)
+                pendingDeleteGarment = null
+            },
+            onDismissRequest = { pendingDeleteGarment = null },
+            accentBadgeText = "안심 안내"
+        )
     }
 
     if (showQuickAddSheet) {
@@ -565,6 +584,13 @@ fun WardrobeScreen(
                     text = "결제 완료 문자나 이메일 영수증을 선택하거나 붙여넣으면 Gemini AI가 브랜드·가격·색상·카테고리·TPO 태그를 추출해 옷장에 등록합니다.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ReassuranceNoticeCard(
+                    heading = "결제 및 개인정보는 안전하게 보호돼요",
+                    body = "카드 번호, 승인 번호, 배송지 주소는 즉시 걸러내고 오직 '의류 이름과 가격'만 추출해 옷장에 등록합니다."
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -648,6 +674,13 @@ fun WardrobeScreen(
                     text = "의류 사진을 촬영하거나 앨범에서 선택하면 외곽 배경을 자동으로 투명하게 오려내고(누끼) 색상·패턴·TPO 태그를 추출합니다.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ReassuranceNoticeCard(
+                    heading = "사진 속 배경과 얼굴 정보는 즉시 삭제돼요",
+                    body = "기기에서 AI가 옷 부분만 깔끔하게 분리(누끼)한 후 원본 사진은 보관하지 않으니 안심하세요."
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))

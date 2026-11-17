@@ -38,6 +38,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import com.example.ui.components.FriendlyReassuranceDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -87,6 +88,7 @@ fun AiStylistChatScreen(
     val bodyShape = BodyShapeType.fromCode(profile.bodyShape)
 
     var inputText by remember { mutableStateOf("") }
+    var showClearChatDialog by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
     val quickPrompts = listOf(
@@ -153,7 +155,7 @@ fun AiStylistChatScreen(
                     }
 
                     IconButton(
-                        onClick = onClearChat,
+                        onClick = { showClearChatDialog = true },
                         modifier = Modifier.testTag("clear_chat_button")
                     ) {
                         Icon(
@@ -162,6 +164,22 @@ fun AiStylistChatScreen(
                             tint = ZigzagMuted
                         )
                     }
+                }
+
+                if (showClearChatDialog) {
+                    FriendlyReassuranceDialog(
+                        title = "대화를 처음부터 다시 나눌까요?",
+                        reassuranceText = "지금까지 나눈 스타일링 대화 내용만 깔끔하게 비우며, 내 옷장에 등록된 옷과 저장된 코디는 그대로 안전하게 보관돼요.",
+                        primaryButtonText = "대화 계속하기",
+                        onPrimaryClick = { showClearChatDialog = false },
+                        secondaryButtonText = "대화 비우기",
+                        onSecondaryClick = {
+                            onClearChat()
+                            showClearChatDialog = false
+                        },
+                        onDismissRequest = { showClearChatDialog = false },
+                        accentBadgeText = "안심 안내"
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))

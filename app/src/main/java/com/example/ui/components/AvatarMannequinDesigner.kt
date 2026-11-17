@@ -438,6 +438,12 @@ fun AvatarMannequinDesignerCard(
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    ReassuranceNoticeCard(
+                        heading = "소중한 체형 데이터는 안전하게 보호돼요",
+                        body = "입력하신 키, 체중, 어깨, 허리 치수는 오직 3D 아바타 피팅 핏 계산에만 사용되며 외부에 공개되지 않아요."
+                    )
                     Spacer(modifier = Modifier.height(10.dp))
 
                     // Nickname & Reset Row
