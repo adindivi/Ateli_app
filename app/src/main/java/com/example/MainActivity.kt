@@ -64,7 +64,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.data.configureAppCheck
 import com.example.data.local.LocalFittingHistoryRepository
-import com.example.data.local.SmartCoordiLocalDatabase
+import com.example.data.local.AteliLocalDatabase
 import com.example.data.repository.WardrobeRepository
 import com.example.ui.auth.AuthScreen
 import com.example.ui.auth.signOutUser
@@ -73,8 +73,8 @@ import com.example.ui.screens.AnalyticsScreen
 import com.example.ui.screens.TpoStylingScreen
 import com.example.ui.screens.VirtualFittingScreen
 import com.example.ui.screens.WardrobeScreen
-import com.example.ui.theme.SmartCoordiTheme
-import com.example.viewmodel.SmartCoordiViewModel
+import com.example.ui.theme.AteliTheme
+import com.example.viewmodel.AteliViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
 
         // STEP 2: Initialize Compose UI with Navigation-Level Auth Gating
         setContent {
-            SmartCoordiTheme {
+            AteliTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppNavigation()
                 }
@@ -126,11 +126,11 @@ fun AppNavigation(auth: FirebaseAuth = Firebase.auth) {
             onGuestMode = { guestUserId = "guest_atelier_director" }
         )
     } else {
-        SmartCoordiMainApp(currentUserId = activeUid)
+        AteliMainApp(currentUserId = activeUid)
     }
 }
 
-enum class SmartCoordiTab(
+enum class AteliTab(
     val route: String,
     val labelKo: String,
     val icon: ImageVector
@@ -144,13 +144,13 @@ enum class SmartCoordiTab(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SmartCoordiMainApp(
+fun AteliMainApp(
     currentUserId: String
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    val viewModel: SmartCoordiViewModel = viewModel(
+    val viewModel: AteliViewModel = viewModel(
         key = currentUserId,
         factory = viewModelFactory {
             initializer {
@@ -159,9 +159,9 @@ fun SmartCoordiMainApp(
                 }
                 val databaseId = app.getString(R.string.firestore_database_id)
                 val db = FirebaseFirestore.getInstance(databaseId)
-                val localDb = SmartCoordiLocalDatabase.getInstance(app)
+                val localDb = AteliLocalDatabase.getInstance(app)
                 val localFittingRepo = LocalFittingHistoryRepository(localDb.fittingHistoryDao())
-                SmartCoordiViewModel(WardrobeRepository(db), currentUserId, localFittingRepo)
+                AteliViewModel(WardrobeRepository(db), currentUserId, localFittingRepo)
             }
         }
     )
@@ -180,14 +180,14 @@ fun SmartCoordiMainApp(
     val selectedChatModel by viewModel.selectedChatModel.collectAsStateWithLifecycle()
     val recentFittingHistory by viewModel.recentFittingHistoryState.collectAsStateWithLifecycle()
 
-    var currentTab by rememberSaveable { mutableStateOf(SmartCoordiTab.WARDROBE) }
+    var currentTab by rememberSaveable { mutableStateOf(AteliTab.WARDROBE) }
     var isProEnterpriseMode by rememberSaveable { mutableStateOf(true) }
     var isProDarkMode by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Mandatory BackHandler for secondary tabs when using custom state switching
-    BackHandler(enabled = currentTab != SmartCoordiTab.WARDROBE) {
-        currentTab = SmartCoordiTab.WARDROBE
+    BackHandler(enabled = currentTab != AteliTab.WARDROBE) {
+        currentTab = AteliTab.WARDROBE
     }
 
     LaunchedEffect(statusBannerMessage) {
@@ -199,7 +199,7 @@ fun SmartCoordiMainApp(
 
     val skuCount = (garmentsState as? com.example.viewmodel.DataUiState.Success)?.data?.size ?: 0
 
-    SmartCoordiTheme(darkTheme = isProDarkMode) {
+    AteliTheme(darkTheme = isProDarkMode) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val isExpandedScreen = maxWidth >= 600.dp
 
@@ -270,7 +270,7 @@ fun SmartCoordiMainApp(
                             containerColor = ZigzagCanvas,
                             tonalElevation = 0.dp
                         ) {
-                            SmartCoordiTab.entries.forEach { tab ->
+                            AteliTab.entries.forEach { tab ->
                                 NavigationBarItem(
                                     selected = currentTab == tab,
                                     onClick = { currentTab = tab },
@@ -309,7 +309,7 @@ fun SmartCoordiMainApp(
             ) {
                 if (isExpandedScreen) {
                     NavigationRail {
-                        SmartCoordiTab.entries.forEach { tab ->
+                        AteliTab.entries.forEach { tab ->
                             NavigationRailItem(
                                 selected = currentTab == tab,
                                 onClick = { currentTab = tab },
@@ -328,7 +328,7 @@ fun SmartCoordiMainApp(
 
                 Box(modifier = Modifier.weight(1f)) {
                     when (currentTab) {
-                        SmartCoordiTab.WARDROBE -> WardrobeScreen(
+                        AteliTab.WARDROBE -> WardrobeScreen(
                             garmentsState = garmentsState,
                             aiRegistrationState = aiRegistrationState,
                             cutoutBitmaps = cutoutBitmaps,
@@ -339,10 +339,10 @@ fun SmartCoordiMainApp(
                             onIncrementWear = viewModel::incrementGarmentWearCount,
                             onDeleteGarment = viewModel::deleteGarment,
                             onResetAiState = viewModel::resetAiRegistrationState,
-                            onOpenVirtualFitting = { currentTab = SmartCoordiTab.VIRTUAL_FITTING }
+                            onOpenVirtualFitting = { currentTab = AteliTab.VIRTUAL_FITTING }
                         )
 
-                        SmartCoordiTab.VIRTUAL_FITTING -> VirtualFittingScreen(
+                        AteliTab.VIRTUAL_FITTING -> VirtualFittingScreen(
                             profileState = profileState,
                             garmentsState = garmentsState,
                             cutoutBitmaps = cutoutBitmaps,
@@ -366,7 +366,7 @@ fun SmartCoordiMainApp(
                             }
                         )
 
-                        SmartCoordiTab.TPO_STYLING -> TpoStylingScreen(
+                        AteliTab.TPO_STYLING -> TpoStylingScreen(
                             weather = weatherState,
                             isWeatherLoading = isWeatherLoading,
                             profileState = profileState,
@@ -393,7 +393,7 @@ fun SmartCoordiMainApp(
                             onDeleteSavedOutfit = viewModel::deleteSavedOutfit
                         )
 
-                        SmartCoordiTab.AI_CHAT -> AiStylistChatScreen(
+                        AteliTab.AI_CHAT -> AiStylistChatScreen(
                             messages = chatMessages,
                             isStreaming = isChatStreaming,
                             selectedModelName = selectedChatModel,
@@ -405,7 +405,7 @@ fun SmartCoordiMainApp(
                             onClearChat = viewModel::clearChatHistory
                         )
 
-                        SmartCoordiTab.ANALYTICS -> AnalyticsScreen(
+                        AteliTab.ANALYTICS -> AnalyticsScreen(
                             garmentsState = garmentsState,
                             cutoutBitmaps = cutoutBitmaps,
                             onIncrementWear = viewModel::incrementGarmentWearCount,
@@ -414,7 +414,7 @@ fun SmartCoordiMainApp(
                                     ?: com.example.data.model.UserProfile()
                                 val garments = (garmentsState as? com.example.viewmodel.DataUiState.Success)?.data
                                     ?: emptyList()
-                                currentTab = SmartCoordiTab.AI_CHAT
+                                currentTab = AteliTab.AI_CHAT
                                 viewModel.sendChatMessage(prompt, profile, garments, weatherState)
                             }
                         )

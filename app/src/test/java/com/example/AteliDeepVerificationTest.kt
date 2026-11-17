@@ -28,7 +28,7 @@ import org.junit.Test
  * 3. Garment CPW (Cost Per Wear), Closet Sleeper Detection, and Firestore Serialization
  * 4. 4-Stage Industry Benchmark Engines (Acloset, Whering, Stylebook, Stitch Fix)
  */
-class SmartCoordiDeepVerificationTest {
+class AteliDeepVerificationTest {
 
     @Test
     fun avatarBodyMetrics_autoClassifyBodyShape_correctlyIdentifiesAllFiveTypes() {

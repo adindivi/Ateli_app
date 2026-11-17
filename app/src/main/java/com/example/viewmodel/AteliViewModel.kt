@@ -39,7 +39,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.abs
 
-private const val TAG = "SmartCoordiVM"
+private const val TAG = "AteliVM"
 
 sealed interface DataUiState<out T> {
     data object Loading : DataUiState<Nothing>
@@ -74,7 +74,7 @@ data class ChatMessage(
 )
 
 
-class SmartCoordiViewModel(
+class AteliViewModel(
     private val repository: WardrobeRepository,
     private val currentUserId: String,
     private val localFittingRepository: LocalFittingHistoryRepository? = null

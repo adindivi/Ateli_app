@@ -86,6 +86,7 @@ import com.example.data.model.GarmentCategory
 import com.example.ui.components.AclosetGarmentDetailModal
 import com.example.ui.components.AclosetQuickAddBottomSheet
 import com.example.ui.components.GarmentCutoutIllustration
+import com.example.ui.components.ZigzagBottomSheetDragHandle
 import com.example.ui.components.parseHexColorSafe
 import com.example.ui.theme.AtelierChampagne
 import com.example.ui.theme.AtelierCoral
@@ -552,7 +553,11 @@ fun WardrobeScreen(
 
         ModalBottomSheet(
             onDismissRequest = { showReceiptSheet = false },
-            sheetState = sheetState
+            sheetState = sheetState,
+            dragHandle = { ZigzagBottomSheetDragHandle() },
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            containerColor = ZigzagCanvas,
+            tonalElevation = 0.dp
         ) {
             Column(
                 modifier = Modifier
@@ -640,7 +645,11 @@ fun WardrobeScreen(
 
         ModalBottomSheet(
             onDismissRequest = { showPhotoSheet = false },
-            sheetState = sheetState
+            sheetState = sheetState,
+            dragHandle = { ZigzagBottomSheetDragHandle() },
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            containerColor = ZigzagCanvas,
+            tonalElevation = 0.dp
         ) {
             Column(
                 modifier = Modifier

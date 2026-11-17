@@ -47,7 +47,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun SmartCoordiTheme(
+fun AteliTheme(
     darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {

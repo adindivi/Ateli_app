@@ -917,7 +917,7 @@ fun B2BInventoryAuditAndEsgCard(
                 Button(
                     onClick = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                        clipboard?.setPrimaryClip(ClipData.newPlainText("SmartCoordi_ERP_CSV", audit.csvPayload))
+                        clipboard?.setPrimaryClip(ClipData.newPlainText("Ateli_ERP_CSV", audit.csvPayload))
                         exportNotice = "📊 ERP/엑셀 호환 CSV 원장 데이터(${audit.totalSkuCount}건 SKU)가 클립보드에 복사되었습니다."
                     },
                     modifier = Modifier
@@ -934,7 +934,7 @@ fun B2BInventoryAuditAndEsgCard(
                         try {
                             val sendIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/csv"
-                                putExtra(Intent.EXTRA_SUBJECT, "SmartCoordi_PRO_Inventory_Audit.csv")
+                                putExtra(Intent.EXTRA_SUBJECT, "Ateli_PRO_Inventory_Audit.csv")
                                 putExtra(Intent.EXTRA_TEXT, audit.csvPayload)
                             }
                             context.startActivity(Intent.createChooser(sendIntent, "CSV 감사 리포트 전송"))

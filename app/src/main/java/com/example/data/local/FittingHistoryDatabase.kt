@@ -145,19 +145,19 @@ interface FittingHistoryDao {
     version = 1,
     exportSchema = false
 )
-abstract class SmartCoordiLocalDatabase : RoomDatabase() {
+abstract class AteliLocalDatabase : RoomDatabase() {
     abstract fun fittingHistoryDao(): FittingHistoryDao
 
     companion object {
         @Volatile
-        private var INSTANCE: SmartCoordiLocalDatabase? = null
+        private var INSTANCE: AteliLocalDatabase? = null
 
-        fun getInstance(context: Context): SmartCoordiLocalDatabase {
+        fun getInstance(context: Context): AteliLocalDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
-                    SmartCoordiLocalDatabase::class.java,
-                    "smart_coordi_local_fitting_history.db"
+                    AteliLocalDatabase::class.java,
+                    "ateli_local_fitting_history.db"
                 )
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()

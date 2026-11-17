@@ -46,6 +46,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import com.example.ui.theme.ZigzagCanvas
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -99,7 +101,16 @@ fun AclosetQuickAddBottomSheet(
         "올리브" to "#556B2F"
     )
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        dragHandle = { ZigzagBottomSheetDragHandle() },
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        containerColor = ZigzagCanvas,
+        tonalElevation = 0.dp
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -253,7 +264,16 @@ fun AclosetGarmentDetailModal(
         AclosetWardrobeAnalyzer.analyzeGarmentBreakEven(garment, allGarments, targetCpwGoal = 10_000L)
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        dragHandle = { ZigzagBottomSheetDragHandle() },
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        containerColor = ZigzagCanvas,
+        tonalElevation = 0.dp
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

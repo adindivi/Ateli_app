@@ -145,8 +145,8 @@ class WardrobeRepositoryRuleTest : FirestoreEmulatorTestBase() {
     }
 
     private companion object {
-        const val ALICE_EMAIL = "alice_smartcoordi@test.com"
-        const val BOB_EMAIL = "bob_smartcoordi@test.com"
+        const val ALICE_EMAIL = "alice_ateli@test.com"
+        const val BOB_EMAIL = "bob_ateli@test.com"
         const val DEFAULT_TIMEOUT_MS = 5000L
         const val FLOW_TIMEOUT_MS = 3000L
     }

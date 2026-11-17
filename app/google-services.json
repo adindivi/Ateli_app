@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:857674079745:android:89f6b77458ac77c1826a00",
         "android_client_info": {
-          "package_name": "com.aistudio.smartcoordi.wqrxkp"
+          "package_name": "com.ateli.fashion.app"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "857674079745-ulrgf8eu9c2q0sg9ni5j1200ajb7bn4i.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.aistudio.smartcoordi.wqrxkp",
+            "package_name": "com.ateli.fashion.app",
             "certificate_hash": "4a44878405b117dc6f0b7be17504572dc8b83224"
           }
         },
