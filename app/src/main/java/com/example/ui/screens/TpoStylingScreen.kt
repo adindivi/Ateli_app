@@ -440,20 +440,12 @@ fun TpoStylingScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        tint = ZigzagStrong
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "오늘의 일정 (TPO) + AI 심층 코디 매칭",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = ZigzagStrong
-                    )
-                }
+                Text(
+                    text = "오늘의 일정 (TPO) + AI 심층 코디 매칭",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ZigzagStrong
+                )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -523,8 +515,6 @@ fun TpoStylingScreen(
                         .height(52.dp)
                         .testTag("generate_tpo_coordi_button")
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text("날씨 적합도 + 체형 + TPO 결합 AI 코디 추천받기")
                 }
             }
@@ -764,8 +754,6 @@ private fun WeatherWardrobeSuggestionCard(
                                 .height(44.dp)
                                 .testTag("apply_best_weather_outfit_button")
                         ) {
-                            Icon(Icons.Default.Checkroom, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "오늘의 날씨 베스트 조합 바로 입기 (코디 저장 & 착용 +1)",
                                 style = MaterialTheme.typography.labelLarge,
@@ -1136,8 +1124,6 @@ private fun RecommendedCoordiShowcaseCard(
                     .height(50.dp)
                     .testTag("wear_recommended_coordi_button")
             ) {
-                Icon(Icons.Default.Check, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
                 Text("오늘 이 추천 코디 입기 (착용 횟수 & CPW 자동 갱신)")
             }
         }

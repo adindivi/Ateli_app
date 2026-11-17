@@ -23,10 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.Savings
-import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -125,19 +121,11 @@ fun AnalyticsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Savings,
-                        contentDescription = null,
-                        tint = ZigzagStrong
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "내 옷장 가성비 (CPW) 리포트",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = ZigzagStrong
-                    )
-                }
+                Text(
+                    text = "내 옷장 가성비 리포트",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = ZigzagStrong
+                )
 
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
@@ -200,20 +188,12 @@ fun AnalyticsScreen(
             Spacer(modifier = Modifier.height(20.dp))
         }
 
-        // 2. Top 3 Most Worn & Best CPW Leaderboard ("뽕 뽑은 효자 아이템 Top 3")
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Default.EmojiEvents,
-                contentDescription = null,
-                tint = ZigzagStrong
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "옷값 '뽕' 뽑은 가성비 효자 아이템 Top 3",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = ZigzagStrong
-            )
-        }
+        // 2. Top 3 Most Worn & Best CPW Leaderboard ("가장 자주 입은 효자 아이템 Top 3")
+        Text(
+            text = "가장 자주 입은 효자 아이템 Top 3",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = ZigzagStrong
+        )
         Spacer(modifier = Modifier.height(10.dp))
 
         if (top3BestValue.isEmpty()) {
@@ -246,19 +226,11 @@ fun AnalyticsScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // 3. Unworn Closet Sleepers -> Karrot Market (당근마켓) Resale Recommendation
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Default.Sell,
-                contentDescription = null,
-                tint = ZigzagStrong
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "잠자는 옷장 방치템 · 당근마켓 판매 알림",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = ZigzagStrong
-            )
-        }
+        Text(
+            text = "잠자는 옷장 방치템 · 리셀 추천",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = ZigzagStrong
+        )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "착용 횟수가 0~1회인 의류입니다. 지금 당근마켓에 중고로 정리하면 옷장 공간과 현금을 동시에 확보할 수 있어요!",

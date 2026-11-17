@@ -223,13 +223,6 @@ fun WardrobeScreen(
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AutoAwesome,
-                                        contentDescription = null,
-                                        tint = ZigzagStrong,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "ZERO-EFFORT AI WARDROBE",
                                         style = MaterialTheme.typography.labelSmall,
@@ -508,8 +501,6 @@ fun WardrobeScreen(
                                 .height(48.dp)
                                 .testTag("seed_starter_wardrobe_button")
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, tint = ZigzagCtaText)
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text("스타터 스마트 옷장 9벌 자동 채우기", style = com.example.ui.theme.ZigzagBuyCta.copy(fontSize = 15.sp))
                         }
                     }
@@ -587,14 +578,7 @@ fun WardrobeScreen(
                     CuratedWardrobePresets.sampleReceiptTemplates.forEach { tpl ->
                         AssistChip(
                             onClick = { receiptInput = tpl.rawReceiptText },
-                            label = { Text("${tpl.storeName} · ${tpl.title}") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                            label = { Text("${tpl.storeName} · ${tpl.title}") }
                         )
                     }
                 }
@@ -627,8 +611,6 @@ fun WardrobeScreen(
                         .height(52.dp)
                         .testTag("submit_receipt_ai_button")
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text("AI로 영수증 파싱 & 옷장에 자동 등록")
                 }
 
@@ -735,8 +717,6 @@ fun WardrobeScreen(
                         .height(52.dp)
                         .testTag("run_photo_ai_cutout_button")
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         if (selectedBitmap != null) "선택한 사진 AI 누끼 제거 & 옷장 등록"
                         else "스튜디오 샘플 의류 이미지로 AI 누끼 & 태깅 실행"

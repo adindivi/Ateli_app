@@ -117,29 +117,18 @@ fun RecentFittingTimelineSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = null,
-                            tint = AtelierChampagne
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "최근 피팅 타임라인",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = AtelierChampagne
                         )
-                        Column {
-                            Text(
-                                text = "🕒 최근 피팅 타임라인 (Room 로컬 DB)",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = AtelierChampagne
-                            )
-                            Text(
-                                text = "가상 피팅 캔버스에서 시도한 코디 조합들이 기기 내 SQLite(Room)에 자동 기록됩니다.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White.copy(alpha = 0.78f)
-                            )
-                        }
+                        Text(
+                            text = "가상 피팅 캔버스에서 시도한 코디 조합들이 로컬에 자동 기록됩니다.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.78f)
+                        )
                     }
 
                     if (historyList.any { !it.isPinned }) {
@@ -189,9 +178,7 @@ fun RecentFittingTimelineSection(
                         .fillMaxWidth()
                         .testTag("record_current_fitting_snapshot_button")
                 ) {
-                    Icon(Icons.Default.Checkroom, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("현재 캔버스 착장 조합 즉시 타임라인에 스냅샷 기록", fontWeight = FontWeight.Bold)
+                    Text("현재 캔버스 착장 스냅샷 기록", fontWeight = FontWeight.Bold)
                 }
             }
         }

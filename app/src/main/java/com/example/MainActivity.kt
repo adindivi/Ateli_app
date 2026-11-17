@@ -135,11 +135,11 @@ enum class AteliTab(
     val labelKo: String,
     val icon: ImageVector
 ) {
-    WARDROBE("wardrobe", "스마트 옷장", Icons.Default.Checkroom),
+    WARDROBE("wardrobe", "내 옷장", Icons.Default.Checkroom),
     VIRTUAL_FITTING("fitting", "3D 피팅", Icons.Default.AccessibilityNew),
-    TPO_STYLING("tpo_styling", "TPO 추천", Icons.Default.AutoAwesome),
-    AI_CHAT("ai_chat", "AI 스타일챗", Icons.Default.ChatBubbleOutline),
-    ANALYTICS("analytics", "가성비 분석", Icons.Default.Insights)
+    TPO_STYLING("tpo_styling", "오늘 코디", Icons.Default.AutoAwesome),
+    AI_CHAT("ai_chat", "스타일챗", Icons.Default.ChatBubbleOutline),
+    ANALYTICS("analytics", "옷장 리포트", Icons.Default.Insights)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -211,11 +211,7 @@ fun AteliMainApp(
                         TopAppBar(
                             title = {
                                 Text(
-                                    text = if (isProEnterpriseMode) {
-                                        "Ateli · ${currentTab.labelKo}"
-                                    } else {
-                                        "Ateli · ${currentTab.labelKo}"
-                                    },
+                                    text = currentTab.labelKo,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.SemiBold,
                                     color = ZigzagStrong

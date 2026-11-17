@@ -130,17 +130,16 @@ fun AiStylistChatScreen(
                                 .background(ZigzagHairline),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = ZigzagStrong,
-                                modifier = Modifier.size(20.dp)
+                            Text(
+                                text = "A",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = ZigzagStrong
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "AI 수석 퍼스널 스타일리스트",
+                                text = "AI 퍼스널 스타일리스트",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = ZigzagStrong,
                                 fontWeight = FontWeight.SemiBold
@@ -198,15 +197,8 @@ fun AiStylistChatScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Psychology,
-                                contentDescription = null,
-                                tint = if (selectedModelName == "gemini-4-argon") Color.White else ZigzagSecondary,
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = "🧠 심층 분석 (Argon)",
+                                text = "심층 분석 (Argon)",
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
                                 color = if (selectedModelName == "gemini-4-argon") Color.White else ZigzagSecondary
                             )
@@ -341,11 +333,10 @@ private fun ChatBubbleItem(message: ChatMessage) {
                     .background(ZigzagHairline),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.SmartToy,
-                    contentDescription = "AI 스타일리스트",
-                    tint = ZigzagStrong,
-                    modifier = Modifier.size(18.dp)
+                Text(
+                    text = "A",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = ZigzagStrong
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))

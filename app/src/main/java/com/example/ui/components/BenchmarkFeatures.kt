@@ -24,16 +24,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Casino
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Luggage
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -243,8 +236,6 @@ fun AclosetQuickAddBottomSheet(
                     .fillMaxWidth()
                     .testTag("quick_add_submit_button")
             ) {
-                Icon(Icons.Default.CheckCircle, contentDescription = null)
-                Spacer(modifier = Modifier.width(6.dp))
                 Text("옷장에 즉시 추가하기", fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -572,9 +563,7 @@ fun WheringDressMeSlotBar(
                     .fillMaxWidth()
                     .testTag("whering_spin_unlocked_button")
             ) {
-                Icon(Icons.Default.Casino, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("잠금(🔒) 제외한 슬롯만 스마트 랜덤 스핀", fontWeight = FontWeight.Bold)
+                Text("잠금 제외 슬롯 랜덤 스핀", fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -714,28 +703,18 @@ fun StylebookPackingCapsuleCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Luggage,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                Column {
+                    Text(
+                        text = "스마트 패킹 캡슐 플래너",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
                     )
-                    Column {
-                        Text(
-                            text = "🧳 Stylebook 스마트 패킹 캡슐 플래너",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Text(
-                            text = "최소 짐으로 최대 코디 조합 · 캐리어 무게 ${capsulePlan.estimatedTotalWeightKg}kg · 부피 ${capsulePlan.spaceSavedPercent}% 절감",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = "최소 짐으로 최대 코디 조합 · 캐리어 무게 ${capsulePlan.estimatedTotalWeightKg}kg · 부피 ${capsulePlan.spaceSavedPercent}% 절감",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
@@ -858,27 +837,17 @@ fun StylebookBreakEvenTrackerCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.TrendingDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+            Column {
+                Text(
+                    text = "목표 CPW 손익분기 트래커",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
                 )
-                Column {
-                    Text(
-                        text = "🎯 Stylebook 목표 CPW 손익분기(뽕 뽑기) 트래커",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                    Text(
-                        text = "중고 감가상각을 반영한 실질 체감 CPW와 손익분기 달성까지 남은 착용 횟수를 계산합니다.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = "중고 감가상각을 반영한 실질 체감 CPW와 손익분기 달성까지 남은 착용 횟수를 계산합니다.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -992,35 +961,22 @@ fun StitchFixBuyOrNotSimulatorCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingBag,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "구매 전 옷장 궁합 시뮬레이터",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
                     )
-                    Column {
-                        Text(
-                            text = "🛍️ Stitch Fix '이 옷 살까 말까?' 구매 궁합 시뮬레이터",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Text(
-                            text = "결제 전 내 옷장과의 신규 코디 생성 수, 부족 영역 보완 지수, 중복 구매 위험도를 검증합니다.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        text = "결제 전 내 옷장과의 신규 코디 생성 수, 부족 영역 보완 지수, 중복 구매 위험도를 검증합니다.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 OutlinedButton(
                     onClick = { showCustomInput = !showCustomInput },
                     modifier = Modifier.testTag("toggle_custom_candidate_btn")
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
                     Text(if (showCustomInput) "프리셋" else "직접 입력", style = MaterialTheme.typography.labelSmall)
                 }
             }
@@ -1173,9 +1129,7 @@ fun StitchFixBuyOrNotSimulatorCard(
                     .fillMaxWidth()
                     .testTag("ask_ai_buy_or_not_button")
             ) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("AI 수석 스타일리스트에게 구매 최종 자문 구하기", fontWeight = FontWeight.Bold)
+                Text("AI 스타일리스트에게 구매 자문 구하기", fontWeight = FontWeight.Bold)
             }
         }
     }

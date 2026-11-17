@@ -286,13 +286,6 @@ fun VirtualFittingScreen(
                         .height(42.dp)
                         .testTag("subtab_recent_fitting")
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = if (fittingSubTab == "RECENT_TIMELINE") ZigzagCtaText else ZigzagMuted
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "최근 피팅 (${recentFittingHistory.size})",
                         style = com.example.ui.theme.ZigzagTabSelected.copy(
@@ -858,8 +851,6 @@ fun VirtualFittingScreen(
                 .height(54.dp)
                 .testTag("save_virtual_outfit_button")
         ) {
-            Icon(Icons.Default.Check, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
             Text("오늘 이 코디 입기 & 저장 (착용 횟수 +1 자동 반영)")
         }
     }

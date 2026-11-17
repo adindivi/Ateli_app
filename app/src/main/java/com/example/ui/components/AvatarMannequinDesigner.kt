@@ -24,13 +24,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -248,24 +245,9 @@ fun AvatarMannequinDesignerCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(AtelierMidnight),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Straighten,
-                            contentDescription = null,
-                            tint = AtelierChampagne,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "${metrics.displayName}님의 신체 치수 & 베이스 마네킹 설계",
+                            text = "${metrics.displayName}님의 신체 치수 & 마네킹 설정",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -424,12 +406,6 @@ fun AvatarMannequinDesignerCard(
                             .fillMaxWidth()
                             .testTag("auto_classify_body_shape_button")
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text("AI 체형 자동 판별", style = MaterialTheme.typography.labelMedium)
                     }
                 }
@@ -686,8 +662,6 @@ fun AvatarMannequinDesignerCard(
                             .height(50.dp)
                             .testTag("save_avatar_measurements_button")
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "내 신체 치수 & 아바타 마네킹 저장하기",
                             style = MaterialTheme.typography.labelLarge,
