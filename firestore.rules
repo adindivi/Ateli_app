@@ -1,0 +1,199 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable Hardened Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             data.heightCm is int && data.heightCm >= 100 && data.heightCm <= 230 &&
+             data.weightKg is int && data.weightKg >= 30 && data.weightKg <= 200 &&
+             data.shoulderWidthCm is int && data.shoulderWidthCm >= 30 && data.shoulderWidthCm <= 70 &&
+             data.waistCm is int && data.waistCm >= 45 && data.waistCm <= 150 &&
+             data.bodyShape is string && data.bodyShape in ['INVERTED_TRIANGLE', 'HOURGLASS', 'RECTANGLE', 'PEAR', 'OVAL'] &&
+             data.skinToneHex is string && data.skinToneHex.size() >= 4 && data.skinToneHex.size() <= 10 &&
+             data.preferredCity is string && data.preferredCity.size() >= 1 && data.preferredCity.size() <= 50 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidGarment(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.brand is string && data.brand.size() >= 1 && data.brand.size() <= 80 &&
+             data.category is string && data.category in ['OUTER', 'TOP', 'BOTTOM', 'SHOES', 'BAG'] &&
+             data.subCategory is string && data.subCategory.size() >= 1 && data.subCategory.size() <= 50 &&
+             data.colorName is string && data.colorName.size() >= 1 && data.colorName.size() <= 40 &&
+             data.colorHex is string && data.colorHex.size() >= 4 && data.colorHex.size() <= 10 &&
+             data.season is string && data.season in ['SPRING_FALL', 'SUMMER', 'WINTER', 'ALL'] &&
+             data.pattern is string && data.pattern.size() >= 1 && data.pattern.size() <= 40 &&
+             data.thickness is string && data.thickness in ['LIGHT', 'MEDIUM', 'HEAVY'] &&
+             data.waterResistant is bool &&
+             data.tpoTags is list && data.tpoTags.size() <= 10 &&
+             (data.tpoTags.size() == 0 || (data.tpoTags[0] is string && data.tpoTags[0].size() <= 30)) &&
+             data.purchasePrice is int && data.purchasePrice >= 0 && data.purchasePrice <= 100000000 &&
+             data.wearCount is int && data.wearCount >= 0 && data.wearCount <= 10000 &&
+             data.sourceType is string && data.sourceType in ['RECEIPT_AUTO', 'CAMERA_AI', 'CURATED_SAMPLE'] &&
+             (!('receiptStore' in data) || data.receiptStore == null || (data.receiptStore is string && data.receiptStore.size() <= 80)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidSavedOutfit(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.tpoOccasion is string && data.tpoOccasion.size() >= 1 && data.tpoOccasion.size() <= 50 &&
+             data.weatherSummary is string && data.weatherSummary.size() >= 1 && data.weatherSummary.size() <= 100 &&
+             data.garmentIds is list && data.garmentIds.size() >= 1 && data.garmentIds.size() <= 10 &&
+             data.garmentIds[0] is string && data.garmentIds[0].size() <= 128 &&
+             (!('outerGarmentId' in data) || data.outerGarmentId == null || (data.outerGarmentId is string && data.outerGarmentId.size() <= 128)) &&
+             (!('topGarmentId' in data) || data.topGarmentId == null || (data.topGarmentId is string && data.topGarmentId.size() <= 128)) &&
+             (!('bottomGarmentId' in data) || data.bottomGarmentId == null || (data.bottomGarmentId is string && data.bottomGarmentId.size() <= 128)) &&
+             (!('shoesGarmentId' in data) || data.shoesGarmentId == null || (data.shoesGarmentId is string && data.shoesGarmentId.size() <= 128)) &&
+             data.aiStylingNote is string && data.aiStylingNote.size() >= 1 && data.aiStylingNote.size() <= 600 &&
+             data.fitScore is int && data.fitScore >= 0 && data.fitScore <= 100 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 1. User Profile Collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if isSignedIn() && request.auth.uid == userId && existing().userId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'heightCm', 'weightKg',
+                         'shoulderWidthCm', 'waistCm', 'bodyShape',
+                         'skinToneHex', 'preferredCity', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'heightCm', 'weightKg',
+                         'shoulderWidthCm', 'waistCm', 'bodyShape',
+                         'skinToneHex', 'preferredCity', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'heightCm', 'weightKg',
+                         'shoulderWidthCm', 'waistCm', 'bodyShape',
+                         'skinToneHex', 'preferredCity', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+
+      // 2. Digital Wardrobe Garments Subcollection
+      match /garments/{garmentId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(garmentId) && request.auth.uid == userId && existing().userId == request.auth.uid;
+        allow list: if isSignedIn() && request.auth.uid == userId && existing().userId == request.auth.uid;
+
+        allow create: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(garmentId) &&
+                         request.auth.uid == userId &&
+                         incoming().keys().hasAll([
+                           'userId', 'name', 'brand', 'category', 'subCategory',
+                           'colorName', 'colorHex', 'season', 'pattern',
+                           'thickness', 'waterResistant', 'tpoTags',
+                           'purchasePrice', 'wearCount', 'sourceType',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'name', 'brand', 'category', 'subCategory',
+                           'colorName', 'colorHex', 'season', 'pattern',
+                           'thickness', 'waterResistant', 'tpoTags',
+                           'purchasePrice', 'wearCount', 'sourceType', 'receiptStore',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidGarment(incoming());
+
+        allow update: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(garmentId) &&
+                         request.auth.uid == userId &&
+                         isValidGarment(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         (
+                           // Action 1: Increment or update wearCount & metadata
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'name', 'brand', 'category', 'subCategory',
+                             'colorName', 'colorHex', 'season', 'pattern',
+                             'thickness', 'waterResistant', 'tpoTags',
+                             'purchasePrice', 'wearCount', 'receiptStore', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isSignedIn() && isValidId(userId) && isValidId(garmentId) && request.auth.uid == userId && existing().userId == request.auth.uid;
+      }
+
+      // 3. Saved Outfits Subcollection
+      match /outfits/{outfitId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(outfitId) && request.auth.uid == userId && existing().userId == request.auth.uid;
+        allow list: if isSignedIn() && request.auth.uid == userId && existing().userId == request.auth.uid;
+
+        allow create: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(outfitId) &&
+                         request.auth.uid == userId &&
+                         incoming().keys().hasAll([
+                           'userId', 'title', 'tpoOccasion', 'weatherSummary',
+                           'garmentIds', 'aiStylingNote', 'fitScore',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'title', 'tpoOccasion', 'weatherSummary',
+                           'garmentIds', 'outerGarmentId', 'topGarmentId',
+                           'bottomGarmentId', 'shoesGarmentId', 'aiStylingNote',
+                           'fitScore', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidSavedOutfit(incoming());
+
+        allow update: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(outfitId) &&
+                         request.auth.uid == userId &&
+                         isValidSavedOutfit(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'title', 'tpoOccasion', 'weatherSummary',
+                           'garmentIds', 'outerGarmentId', 'topGarmentId',
+                           'bottomGarmentId', 'shoesGarmentId', 'aiStylingNote',
+                           'fitScore', 'updatedAt'
+                         ]);
+
+        allow delete: if isSignedIn() && isValidId(userId) && isValidId(outfitId) && request.auth.uid == userId && existing().userId == request.auth.uid;
+      }
+    }
+  }
+}

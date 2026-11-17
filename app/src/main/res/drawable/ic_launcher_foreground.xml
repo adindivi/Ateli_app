@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="2.6"
+        android:scaleY="2.6"
+        android:translateX="22.8"
+        android:translateY="22.8">
+        <!-- Bold filled hanger + garment silhouette in 24x24 space -->
+        <path
+            android:fillColor="#E6C280"
+            android:pathData="M12,3.5 C10.34,3.5 9,4.84 9,6.5 L11,6.5 C11,5.95 11.45,5.5 12,5.5 C12.55,5.5 13,5.95 13,6.5 C13,7.05 12.6,7.4 11.8,7.9 L3.4,13.1 C2.5,13.65 2,14.6 2,15.65 C2,17.22 3.28,18.5 4.85,18.5 L19.15,18.5 C20.72,18.5 22,17.22 22,15.65 C22,14.6 21.5,13.65 20.6,13.1 L13.5,8.7 C14.4,7.95 15,7.3 15,6.5 C15,4.84 13.66,3.5 12,3.5 Z M5.5,15.5 L12,11.5 L18.5,15.5 L5.5,15.5 Z" />
+        <path
+            android:fillColor="#FF6B6B"
+            android:pathData="M19,2 L20,4.5 L22.5,5.5 L20,6.5 L19,9 L18,6.5 L15.5,5.5 L18,4.5 Z" />
+    </group>
+</vector>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Ateli</string>
+    <string name="tab_wardrobe">스마트 옷장</string>
+    <string name="tab_virtual_fitting">가상 피팅</string>
+    <string name="tab_tpo_styling">TPO 추천</string>
+    <string name="tab_analytics">가성비 분석</string>
+</resources>
