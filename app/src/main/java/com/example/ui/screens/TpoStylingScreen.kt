@@ -76,6 +76,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -245,9 +247,13 @@ fun TpoStylingScreen(
                                 )
                                 Text(
                                     text = "${weather.temperatureC.toInt()}°C · ${weather.conditionLabelKo}",
-                                    style = com.example.ui.theme.ZigzagHeading.copy(fontSize = 22.sp, lineHeight = 28.sp),
-                                    color = ZigzagStrong,
-                                    fontWeight = FontWeight.SemiBold
+                                    style = TextStyle(
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = ZigzagStrong,
+                                        fontFeatureSettings = "tnum",
+                                        platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                    )
                                 )
                             }
                         }

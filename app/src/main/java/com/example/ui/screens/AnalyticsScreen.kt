@@ -49,6 +49,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import com.example.data.model.Garment
@@ -513,17 +514,26 @@ private fun MetricBox(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = ZigzagStrong,
+                style = TextStyle(
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ZigzagStrong,
+                    fontFeatureSettings = "tnum",
+                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = ZigzagMuted
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    color = ZigzagMuted,
+                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                ),
+                maxLines = 1,
+                softWrap = false
             )
         }
     }
@@ -547,24 +557,25 @@ private fun TopCpwGarmentRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(24.dp)
                         .clip(CircleShape)
                         .background(ZigzagStrong),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "${rank}",
+                        text = "$rank",
                         style = TextStyle(
-                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false),
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = Color.White
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                        )
                     )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(52.dp)
                         .clip(RoundedCornerShape(0.dp))
                         .background(ZigzagHairline)
                 ) {
@@ -578,24 +589,54 @@ private fun TopCpwGarmentRow(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "[${garment.brand}] ${garment.name}",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = ZigzagForeground,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color(0xFFF1F5F9),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                        ) {
+                            Text(
+                                text = "1회 ₩${String.format("%,d", garment.costPerWear)}",
+                                style = TextStyle(
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF1E293B),
+                                    fontFeatureSettings = "tnum",
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "[${garment.brand}] ${garment.name}",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = ZigzagForeground,
+                        text = "구매가 ₩${String.format("%,d", garment.purchasePrice)} · ${garment.wearCount}회 (${garment.valueRecoveryPercent}%)",
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            color = ZigzagSecondary,
+                            fontFeatureSettings = "tnum",
+                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                        ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = "구매가 ₩${String.format("%,d", garment.purchasePrice)} · 총 ${garment.wearCount}회 착용",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = ZigzagSecondary
-                    )
-                    Text(
-                        text = "1회당 ₩${String.format("%,d", garment.costPerWear)} (달성률 ${garment.valueRecoveryPercent}%)",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = ZigzagStrong
-                    )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
                 OutlinedButton(
                     onClick = onIncrementWear,
                     shape = RoundedCornerShape(24.dp),
@@ -654,29 +695,51 @@ private fun SleeperResaleCard(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = ZigzagHairline
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = if (garment.wearCount == 0L) "방치 의류 (0회)" else "연간 1회 착용",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = ZigzagSecondary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            text = "[${garment.brand}] ${garment.name}",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = ZigzagForeground,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color(0xFFF1F5F9),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                        ) {
+                            Text(
+                                text = "당근 ₩${String.format("%,d", suggestedResalePrice)}",
+                                style = TextStyle(
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF1E293B),
+                                    fontFeatureSettings = "tnum",
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
-                        text = "[${garment.brand}] ${garment.name}",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = ZigzagForeground,
+                        text = "구매가 ₩${String.format("%,d", garment.purchasePrice)} · ${if (garment.wearCount == 0L) "미착용 방치" else "연 1회 착용"}",
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            color = ZigzagSecondary,
+                            fontFeatureSettings = "tnum",
+                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                        ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "구매가 ₩${String.format("%,d", garment.purchasePrice)} → 당근 추천 ₩${String.format("%,d", suggestedResalePrice)}",
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = ZigzagStrong
                     )
                 }
             }

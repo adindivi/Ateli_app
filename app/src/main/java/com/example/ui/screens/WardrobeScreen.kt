@@ -75,6 +75,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -880,15 +882,21 @@ private fun GarmentWardrobeCard(
                 // Source badge
                 Surface(
                     color = ZigzagStrong,
-                    shape = RoundedCornerShape(0.dp),
+                    shape = RoundedCornerShape(4.dp),
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(6.dp)
                 ) {
                     Text(
-                        text = if (garment.sourceType == "CAMERA_AI") "AI 누끼" else "영수증 연동",
-                        style = com.example.ui.theme.ZigzagMetadata.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
-                        color = ZigzagCtaText,
+                        text = if (garment.sourceType == "CAMERA_AI") "AI 누끼" else "영수증",
+                        style = TextStyle(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = ZigzagCtaText,
+                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                        ),
+                        maxLines = 1,
+                        softWrap = false,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -900,14 +908,14 @@ private fun GarmentWardrobeCard(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(6.dp)
-                            .size(24.dp)
+                            .size(22.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.WaterDrop,
                                 contentDescription = "방수/발수",
                                 tint = Color.White,
-                                modifier = Modifier.size(13.dp)
+                                modifier = Modifier.size(12.dp)
                             )
                         }
                     }
@@ -921,20 +929,27 @@ private fun GarmentWardrobeCard(
                         .padding(6.dp)
                         .clip(RoundedCornerShape(24.dp))
                         .background(ZigzagCanvas.copy(alpha = 0.92f))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                        .border(0.5.dp, ZigzagHairline, RoundedCornerShape(24.dp))
+                        .padding(horizontal = 7.dp, vertical = 3.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(10.dp)
+                            .size(8.dp)
                             .clip(CircleShape)
                             .background(parseHexColorSafe(garment.colorHex))
                             .border(0.5.dp, ZigzagHairline, CircleShape)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = garment.colorName,
-                        style = com.example.ui.theme.ZigzagMetadata.copy(fontSize = 11.sp),
-                        color = ZigzagStrong
+                        style = TextStyle(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = ZigzagStrong,
+                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                        ),
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -963,12 +978,20 @@ private fun GarmentWardrobeCard(
             ) {
                 garment.tpoTags.take(2).forEach { tag ->
                     Surface(
-                        color = ZigzagAppBanner,
-                        shape = RoundedCornerShape(2.dp)
+                        color = Color(0xFFF1F5F9),
+                        shape = RoundedCornerShape(4.dp),
+                        border = BorderStroke(0.5.dp, Color(0xFFE2E8F0))
                     ) {
                         Text(
                             text = "#$tag",
-                            style = com.example.ui.theme.ZigzagMetadata.copy(fontSize = 11.sp, color = ZigzagSecondary),
+                            style = TextStyle(
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF475569),
+                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                            ),
+                            maxLines = 1,
+                            softWrap = false,
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                         )
                     }
@@ -990,33 +1013,46 @@ private fun GarmentWardrobeCard(
                     )
                     Text(
                         text = "₩${String.format("%,d", garment.costPerWear)}",
-                        style = com.example.ui.theme.ZigzagTabSelected.copy(fontSize = 15.sp, color = ZigzagStrong)
+                        style = TextStyle(
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ZigzagStrong,
+                            fontFeatureSettings = "tnum",
+                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                        )
                     )
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(24.dp),
+                        color = ZigzagStrong,
                         modifier = Modifier
                             .clickable { onIncrementWear() }
                             .testTag("wear_plus_button_${garment.id}")
                     ) {
                         Text(
                             text = "입음 +1 (${garment.wearCount}회)",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                            style = TextStyle(
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ZigzagCtaText,
+                                fontFeatureSettings = "tnum",
+                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                            ),
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
                         )
                     }
                     IconButton(
                         onClick = onDelete,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = "의류 삭제",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = ZigzagSecondary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
