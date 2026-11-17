@@ -1,13 +1,10 @@
 package com.example.ui.screens
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.location.Geocoder
 import android.location.Location
-import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -112,16 +109,12 @@ import com.example.ui.theme.ZigzagAppBanner
 import com.example.ui.theme.ZigzagCtaBlack
 import com.example.ui.theme.ZigzagCtaText
 import com.example.ui.theme.ZigzagPillText
-import com.example.ui.theme.AtelierIvory
-import com.example.ui.theme.AtelierMidnight
-import com.example.ui.theme.AtelierSage
+import com.example.util.LocationUtils
+import com.example.util.toFormattedGps
 import com.example.viewmodel.AiRecommendedCoordi
 import com.example.viewmodel.AiTaskState
 import com.example.viewmodel.DataUiState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -167,10 +160,10 @@ fun TpoStylingScreen(
 
     val fetchCurrentDeviceLocation: () -> Unit = {
         coroutineScope.launch {
-            val loc = getBestLastKnownLocation(context)
+            val loc = LocationUtils.getBestLastKnownLocation(context)
             if (loc != null) {
-                val label = resolveKoreanDistrictLabel(context, loc.latitude, loc.longitude)
-                locationStatusHint = "📍 GPS 좌표 (${String.format("%.4f", loc.latitude)}, ${String.format("%.4f", loc.longitude)}) 기상 연동 완료"
+                val label = LocationUtils.resolveKoreanDistrictLabel(context, loc.latitude, loc.longitude)
+                locationStatusHint = "📍 GPS 좌표 (${loc.latitude.toFormattedGps()}, ${loc.longitude.toFormattedGps()}) 기상 연동 완료"
                 onRefreshWeatherByLocation(loc.latitude, loc.longitude, label)
             } else {
                 // Default to Seoul City Hall coordinates if emulator has no cached GPS fix yet
@@ -1214,49 +1207,5 @@ private fun SavedOutfitItemCard(
                 )
             }
         }
-    }
-}
-
-@SuppressLint("MissingPermission")
-private fun getBestLastKnownLocation(context: Context): Location? {
-    return try {
-        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-            ?: return null
-        val providers = listOf(
-            LocationManager.GPS_PROVIDER,
-            LocationManager.NETWORK_PROVIDER,
-            LocationManager.PASSIVE_PROVIDER
-        )
-        var bestLocation: Location? = null
-        for (provider in providers) {
-            val loc = runCatching { locationManager.getLastKnownLocation(provider) }.getOrNull()
-            if (loc != null) {
-                if (bestLocation == null || loc.accuracy < bestLocation.accuracy) {
-                    bestLocation = loc
-                }
-            }
-        }
-        bestLocation
-    } catch (e: Exception) {
-        null
-    }
-}
-
-@Suppress("DEPRECATION")
-private suspend fun resolveKoreanDistrictLabel(
-    context: Context,
-    lat: Double,
-    lon: Double
-): String? = withContext(Dispatchers.IO) {
-    try {
-        val geocoder = Geocoder(context, Locale.KOREA)
-        val addresses = geocoder.getFromLocation(lat, lon, 1)
-        val addr = addresses?.firstOrNull() ?: return@withContext null
-        listOfNotNull(addr.adminArea, addr.locality ?: addr.subLocality)
-            .distinct()
-            .joinToString(" ")
-            .takeIf { it.isNotBlank() }
-    } catch (e: Exception) {
-        null
     }
 }

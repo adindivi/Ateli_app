@@ -59,6 +59,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import com.example.ui.components.showFintechToast
+import com.example.util.toFormattedKrw
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -911,7 +912,7 @@ private fun SwipeableGarmentMiniCard(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "${garment.colorName} · ₩${String.format("%,d", garment.costPerWear)}/회",
+                text = "${garment.colorName} · ${garment.costPerWear.toFormattedKrw()}/회",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1

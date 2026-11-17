@@ -924,8 +924,6 @@ fun B2BInventoryAuditAndEsgCard(
                         .weight(1f)
                         .testTag("export_b2b_csv_button")
                 ) {
-                    Icon(Icons.Default.FactCheck, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
                     Text("ERP 호환 CSV 내보내기", style = MaterialTheme.typography.labelMedium)
                 }
 

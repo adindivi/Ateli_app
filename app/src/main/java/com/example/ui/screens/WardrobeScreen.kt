@@ -95,6 +95,7 @@ import com.example.ui.components.ReassuranceNoticeCard
 import com.example.ui.components.ZigzagBottomSheetDragHandle
 import com.example.ui.components.showFintechToast
 import com.example.ui.components.parseHexColorSafe
+import com.example.util.toFormattedKrw
 import com.example.ui.theme.AtelierChampagne
 import com.example.ui.theme.AtelierCoral
 import com.example.ui.theme.AtelierDeepPlum
@@ -829,7 +830,7 @@ private fun AiRegistrationFeedbackSection(
                         Spacer(modifier = Modifier.height(6.dp))
                         aiRegistrationState.result.forEach { item ->
                             Text(
-                                text = "• [${item.brand}] ${item.name} (${item.colorName} · ${item.subCategory} · ₩${String.format("%,d", item.purchasePrice)})",
+                                text = "• [${item.brand}] ${item.name} (${item.colorName} · ${item.subCategory} · ${item.purchasePrice.toFormattedKrw()})",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -1028,7 +1029,7 @@ private fun GarmentWardrobeCard(
                         style = com.example.ui.theme.ZigzagMetadata.copy(fontSize = 11.sp, color = ZigzagMuted)
                     )
                     Text(
-                        text = "₩${String.format("%,d", garment.costPerWear)}",
+                        text = garment.costPerWear.toFormattedKrw(),
                         style = TextStyle(
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,

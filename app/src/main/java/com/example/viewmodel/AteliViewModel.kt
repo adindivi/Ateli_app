@@ -1,7 +1,6 @@
 package com.example.viewmodel
 
 import android.graphics.Bitmap
-import android.graphics.Color as AndroidColor
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,6 +16,7 @@ import com.example.data.remote.WeatherRepository
 import com.example.data.remote.WeatherWardrobeMatcher
 import com.example.data.repository.WardrobeRepository
 import com.example.ui.components.AvatarBodyMetrics
+import com.example.util.BitmapUtils
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.Schema
@@ -561,12 +561,12 @@ class AteliViewModel(
         viewModelScope.launch {
             _aiRegistrationState.value = AiTaskState.Loading("AI 배경 제거(누끼) 및 비전 메타데이터(색상·패턴·계절) 추출 중...")
             try {
-                // Step 1: Perform client-side background segmentation (누끼)
+                // Step 1: Perform client-side background segmentation (누끼) via BitmapUtils
                 val cutoutBitmap = withContext(Dispatchers.Default) {
-                    removeBackgroundFromGarmentBitmap(originalBitmap)
+                    BitmapUtils.removeBackgroundFromGarmentBitmap(originalBitmap)
                 }
                 val scaledForInference = withContext(Dispatchers.Default) {
-                    scaleBitmapDown(originalBitmap, maxDimension = 768)
+                    BitmapUtils.scaleBitmapDown(originalBitmap, maxDimension = 768)
                 }
 
                 // Step 2: Multimodal Gemini 3.8 Flash analysis
@@ -883,69 +883,5 @@ class AteliViewModel(
             )
         }
         return result
-    }
-
-    /**
-     * Client-side AI Background Removal (누끼 전처리) algorithm:
-     * Samples the perimeter corner pixels of the photo and makes matching background pixels transparent
-     * with smooth feathering so the garment stands out cleanly on the virtual fitting canvas.
-     */
-    private fun removeBackgroundFromGarmentBitmap(src: Bitmap): Bitmap {
-        val scaled = scaleBitmapDown(src, maxDimension = 420)
-        val width = scaled.width
-        val height = scaled.height
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val pixels = IntArray(width * height)
-        scaled.getPixels(pixels, 0, width, 0, 0, width, height)
-
-        // Sample 4 corners to estimate studio/floor background RGB
-        val cornerIndices = listOf(
-            0,
-            width - 1,
-            (height - 1) * width,
-            (height - 1) * width + (width - 1)
-        )
-        var bgR = 0
-        var bgG = 0
-        var bgB = 0
-        for (idx in cornerIndices) {
-            val c = pixels[idx]
-            bgR += AndroidColor.red(c)
-            bgG += AndroidColor.green(c)
-            bgB += AndroidColor.blue(c)
-        }
-        bgR /= cornerIndices.size
-        bgG /= cornerIndices.size
-        bgB /= cornerIndices.size
-
-        val threshold = 48
-        for (i in pixels.indices) {
-            val p = pixels[i]
-            val r = AndroidColor.red(p)
-            val g = AndroidColor.green(p)
-            val b = AndroidColor.blue(p)
-            val dist = (abs(r - bgR) + abs(g - bgG) + abs(b - bgB)) / 3
-            if (dist < threshold) {
-                pixels[i] = AndroidColor.argb(0, r, g, b)
-            } else if (dist < threshold + 18) {
-                val alpha = ((dist - threshold) * 255 / 18).coerceIn(0, 255)
-                pixels[i] = AndroidColor.argb(alpha, r, g, b)
-            }
-        }
-        out.setPixels(pixels, 0, width, 0, 0, width, height)
-        return out
-    }
-
-    private fun scaleBitmapDown(src: Bitmap, maxDimension: Int): Bitmap {
-        val w = src.width
-        val h = src.height
-        if (w <= maxDimension && h <= maxDimension) return src
-        val ratio = w.toFloat() / h.toFloat()
-        val (newW, newH) = if (w > h) {
-            maxDimension to (maxDimension / ratio).toInt().coerceAtLeast(1)
-        } else {
-            (maxDimension * ratio).toInt().coerceAtLeast(1) to maxDimension
-        }
-        return Bitmap.createScaledBitmap(src, newW, newH, true)
     }
 }

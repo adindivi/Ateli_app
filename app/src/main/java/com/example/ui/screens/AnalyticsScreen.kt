@@ -58,6 +58,8 @@ import com.example.data.model.Garment
 import com.example.ui.components.B2BInventoryAuditAndEsgCard
 import com.example.ui.components.GarmentCutoutIllustration
 import com.example.ui.components.showFintechToast
+import com.example.util.toFormattedKrw
+import com.example.util.toFormattedWon
 import com.example.ui.components.StitchFixBuyOrNotSimulatorCard
 import com.example.ui.components.StylebookBreakEvenTrackerCard
 import com.example.ui.components.parseHexColorSafe
@@ -151,13 +153,13 @@ fun AnalyticsScreen(
                 ) {
                     MetricBox(
                         label = "옷장 총 자산가치",
-                        value = "₩${String.format("%,d", totalWardrobeValue)}",
+                        value = totalWardrobeValue.toFormattedKrw(),
                         subLabel = "총 ${garments.size}벌",
                         modifier = Modifier.weight(1f)
                     )
                     MetricBox(
                         label = "평균 1회 착용비용",
-                        value = "₩${String.format("%,d", averageCpw)}",
+                        value = averageCpw.toFormattedKrw(),
                         subLabel = "누적 ${totalWearCount}회 착용",
                         modifier = Modifier.weight(1f)
                     )
@@ -294,8 +296,8 @@ fun AnalyticsScreen(
                             val draft = """
                                 [당근마켓 판매글 자동완성]
                                 제목: [${sleeper.brand}] ${sleeper.name} (${sleeper.colorName}) 상태 최상 양도합니다
-                                • 정가: ${String.format("%,d", sleeper.purchasePrice)}원
-                                • 희망 판매가: ${String.format("%,d", suggestedResalePrice)}원
+                                • 정가: ${sleeper.purchasePrice.toFormattedWon()}
+                                • 희망 판매가: ${suggestedResalePrice.toFormattedWon()}
                                 • 실착용 횟수: ${sleeper.wearCount}회 (보관 상태 최상)
                                 • 특징: ${sleeper.season} 시즌 / ${sleeper.subCategory} / ${sleeper.tpoTags.joinToString(", ")} 코디에 잘 어울립니다.
                             """.trimIndent()
@@ -625,7 +627,7 @@ private fun TopCpwGarmentRow(
                             border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
                             Text(
-                                text = "1회 ₩${String.format("%,d", garment.costPerWear)}",
+                                text = "1회 ${garment.costPerWear.toFormattedKrw()}",
                                 style = TextStyle(
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -641,7 +643,7 @@ private fun TopCpwGarmentRow(
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "구매가 ₩${String.format("%,d", garment.purchasePrice)} · ${garment.wearCount}회 (${garment.valueRecoveryPercent}%)",
+                        text = "구매가 ${garment.purchasePrice.toFormattedKrw()} · ${garment.wearCount}회 (${garment.valueRecoveryPercent}%)",
                         style = TextStyle(
                             fontSize = 12.sp,
                             color = ZigzagSecondary,
@@ -731,7 +733,7 @@ private fun SleeperResaleCard(
                             border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
                             Text(
-                                text = "당근 ₩${String.format("%,d", suggestedResalePrice)}",
+                                text = "당근 ${suggestedResalePrice.toFormattedKrw()}",
                                 style = TextStyle(
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -747,7 +749,7 @@ private fun SleeperResaleCard(
                     }
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
-                        text = "구매가 ₩${String.format("%,d", garment.purchasePrice)} · ${if (garment.wearCount == 0L) "미착용 방치" else "연 1회 착용"}",
+                        text = "구매가 ${garment.purchasePrice.toFormattedKrw()} · ${if (garment.wearCount == 0L) "미착용 방치" else "연 1회 착용"}",
                         style = TextStyle(
                             fontSize = 12.sp,
                             color = ZigzagSecondary,

@@ -12,23 +12,23 @@ import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 data class OpenMeteoResponse(
-    @Json(name = "current") val current: CurrentWeatherDto? = null,
-    @Json(name = "daily") val daily: DailyWeatherDto? = null
+    @param:Json(name = "current") val current: CurrentWeatherDto? = null,
+    @param:Json(name = "daily") val daily: DailyWeatherDto? = null
 )
 
 data class CurrentWeatherDto(
-    @Json(name = "temperature_2m") val temperature2m: Double = 18.0,
-    @Json(name = "relative_humidity_2m") val relativeHumidity2m: Int = 55,
-    @Json(name = "apparent_temperature") val apparentTemperature: Double = 17.5,
-    @Json(name = "precipitation") val precipitation: Double = 0.0,
-    @Json(name = "weather_code") val weatherCode: Int = 0,
-    @Json(name = "wind_speed_10m") val windSpeed10m: Double = 2.5
+    @param:Json(name = "temperature_2m") val temperature2m: Double = 18.0,
+    @param:Json(name = "relative_humidity_2m") val relativeHumidity2m: Int = 55,
+    @param:Json(name = "apparent_temperature") val apparentTemperature: Double = 17.5,
+    @param:Json(name = "precipitation") val precipitation: Double = 0.0,
+    @param:Json(name = "weather_code") val weatherCode: Int = 0,
+    @param:Json(name = "wind_speed_10m") val windSpeed10m: Double = 2.5
 )
 
 data class DailyWeatherDto(
-    @Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int>? = null,
-    @Json(name = "temperature_2m_max") val temperatureMax: List<Double>? = null,
-    @Json(name = "temperature_2m_min") val temperatureMin: List<Double>? = null
+    @param:Json(name = "precipitation_probability_max") val precipitationProbabilityMax: List<Int>? = null,
+    @param:Json(name = "temperature_2m_max") val temperatureMax: List<Double>? = null,
+    @param:Json(name = "temperature_2m_min") val temperatureMin: List<Double>? = null
 )
 
 interface OpenMeteoService {
