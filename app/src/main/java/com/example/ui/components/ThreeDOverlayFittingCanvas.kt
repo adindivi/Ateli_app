@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,13 +28,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ViewInAr
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -71,9 +67,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.example.data.model.Garment
 import com.example.ui.theme.AtelierChampagne
-import com.example.ui.theme.AtelierCoral
-import com.example.ui.theme.AtelierMidnight
-import com.example.ui.theme.AtelierSage
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -154,7 +147,6 @@ object Overlay3DRigCalculator {
  * and overlays selected garments (`OUTER`, `TOP`, `BOTTOM`, `SHOES`) with anatomical anchor snapping,
  * 3D perspective foreshortening, drop shadow casting, X-Ray opacity inspection, and Z-layer controls.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ThreeDOverlayFittingCanvas(
     metrics: AvatarBodyMetrics,

@@ -27,8 +27,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Casino
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.Button
@@ -65,8 +63,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.compose.material.icons.filled.History
-import androidx.compose.ui.text.font.FontWeight
 import com.example.data.local.FittingHistoryEntity
 import com.example.data.model.Garment
 import com.example.data.model.UserProfile
@@ -85,10 +81,7 @@ import com.example.ui.theme.AtelierMidnight
 import com.example.ui.theme.ZigzagCanvas
 import com.example.ui.theme.ZigzagHairline
 import com.example.ui.theme.ZigzagStrong
-import com.example.ui.theme.ZigzagForeground
-import com.example.ui.theme.ZigzagSecondary
 import com.example.ui.theme.ZigzagMuted
-import com.example.ui.theme.ZigzagCtaBlack
 import com.example.ui.theme.ZigzagCtaText
 import com.example.viewmodel.DataUiState
 import kotlin.math.roundToInt

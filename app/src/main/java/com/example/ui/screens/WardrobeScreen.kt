@@ -39,7 +39,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Checkroom
@@ -73,7 +72,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -86,7 +84,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.CuratedWardrobePresets
 import com.example.data.model.Garment
-import com.example.data.model.GarmentCategory
 import com.example.ui.components.AclosetGarmentDetailModal
 import com.example.ui.components.AclosetQuickAddBottomSheet
 import com.example.ui.components.FriendlyReassuranceDialog
@@ -96,11 +93,7 @@ import com.example.ui.components.ZigzagBottomSheetDragHandle
 import com.example.ui.components.showFintechToast
 import com.example.ui.components.parseHexColorSafe
 import com.example.util.toFormattedKrw
-import com.example.ui.theme.AtelierChampagne
 import com.example.ui.theme.AtelierCoral
-import com.example.ui.theme.AtelierDeepPlum
-import com.example.ui.theme.AtelierIvory
-import com.example.ui.theme.AtelierMidnight
 import com.example.ui.theme.AtelierSage
 import com.example.ui.theme.ZigzagCanvas
 import com.example.ui.theme.ZigzagHairline

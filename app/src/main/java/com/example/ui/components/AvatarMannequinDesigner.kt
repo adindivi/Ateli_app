@@ -49,7 +49,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -79,7 +78,6 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.BodyShapeType
 import com.example.data.model.UserProfile
 import com.example.ui.theme.AtelierChampagne
-import com.example.ui.theme.AtelierCoral
 import com.example.ui.theme.AtelierIvory
 import com.example.ui.theme.AtelierMidnight
 import com.example.ui.theme.AtelierSage

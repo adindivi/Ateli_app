@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.Checkroom
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.History
@@ -60,7 +58,6 @@ import androidx.compose.ui.unit.dp
 import com.example.data.local.FittingHistoryEntity
 import com.example.data.model.Garment
 import com.example.ui.theme.AtelierChampagne
-import com.example.ui.theme.AtelierCoral
 import com.example.ui.theme.AtelierMidnight
 import com.example.ui.theme.AtelierSage
 import java.text.SimpleDateFormat

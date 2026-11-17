@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.example.data.model.BodyShapeType
 import com.example.data.model.Garment
 
 fun parseHexColorSafe(hex: String, fallback: Color = Color(0xFF3E4A61)): Color {
@@ -276,110 +275,5 @@ fun DrawScope.drawGarmentSilhouette(
                 cornerRadius = CornerRadius(24f, 24f)
             )
         }
-    }
-}
-
-/**
- * Draws the custom 2D body-proportioned mannequin avatar in the Virtual Fitting Canvas.
- * Dynamically scales shoulder width, waist taper, hip curve, and height ratio based on the user's
- * BodyShapeType and body measurements.
- */
-@Composable
-fun BodyShapeMannequinCanvas(
-    bodyShape: BodyShapeType,
-    skinToneHex: String,
-    heightCm: Long,
-    weightKg: Long,
-    modifier: Modifier = Modifier
-) {
-    val skinColor = parseHexColorSafe(skinToneHex, Color(0xFFF3D6C1))
-    val outlineColor = Color(0xFF4A4458).copy(alpha = 0.45f)
-
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val cx = w * 0.5f
-
-        // Subtle studio measurement grid
-        val gridSpacing = h / 10f
-        for (i in 1..9) {
-            drawLine(
-                color = Color.Gray.copy(alpha = 0.12f),
-                start = Offset(w * 0.08f, i * gridSpacing),
-                end = Offset(w * 0.92f, i * gridSpacing),
-                strokeWidth = 1f
-            )
-        }
-
-        // BMI / Weight subtle modifier
-        val bmiFactor = ((weightKg.toFloat() / ((heightCm.toFloat() / 100f) * (heightCm.toFloat() / 100f))) / 21.5f)
-            .coerceIn(0.85f, 1.22f)
-
-        val shoulderHalf = w * 0.20f * bodyShape.shoulderScale * bmiFactor
-        val waistHalf = w * 0.13f * bodyShape.waistScale * bmiFactor
-        val hipHalf = w * 0.17f * bodyShape.hipScale * bmiFactor
-
-        // Head & Neck
-        drawCircle(
-            color = skinColor,
-            radius = w * 0.085f,
-            center = Offset(cx, h * 0.11f)
-        )
-        drawCircle(
-            color = outlineColor,
-            radius = w * 0.085f,
-            center = Offset(cx, h * 0.11f),
-            style = Stroke(width = 2.5f)
-        )
-        drawRoundRect(
-            color = skinColor,
-            topLeft = Offset(cx - w * 0.03f, h * 0.18f),
-            size = Size(w * 0.06f, h * 0.06f),
-            cornerRadius = CornerRadius(8f, 8f)
-        )
-
-        // Torso & Hips Path
-        val torsoPath = Path().apply {
-            moveTo(cx - shoulderHalf, h * 0.23f)
-            lineTo(cx + shoulderHalf, h * 0.23f)
-            // Right arm outer guide
-            lineTo(cx + shoulderHalf * 1.15f, h * 0.50f)
-            lineTo(cx + shoulderHalf * 0.95f, h * 0.50f)
-            lineTo(cx + shoulderHalf * 0.82f, h * 0.29f)
-            // Right waist & hip
-            lineTo(cx + waistHalf, h * 0.42f)
-            lineTo(cx + hipHalf, h * 0.54f)
-            // Right leg
-            lineTo(cx + hipHalf * 0.65f, h * 0.88f)
-            lineTo(cx + w * 0.03f, h * 0.88f)
-            lineTo(cx, h * 0.56f)
-            // Left leg
-            lineTo(cx - w * 0.03f, h * 0.88f)
-            lineTo(cx - hipHalf * 0.65f, h * 0.88f)
-            // Left hip & waist
-            lineTo(cx - hipHalf, h * 0.54f)
-            lineTo(cx - waistHalf, h * 0.42f)
-            lineTo(cx - shoulderHalf * 0.82f, h * 0.29f)
-            lineTo(cx - shoulderHalf * 0.95f, h * 0.50f)
-            lineTo(cx - shoulderHalf * 1.15f, h * 0.50f)
-            close()
-        }
-
-        drawPath(torsoPath, color = skinColor)
-        drawPath(torsoPath, color = outlineColor, style = Stroke(width = 2.5f))
-
-        // Mannequin proportion guide lines (shoulder, waist, hip dashed indicators)
-        drawLine(
-            color = Color(0xFFD4A853).copy(alpha = 0.65f),
-            start = Offset(cx - shoulderHalf, h * 0.24f),
-            end = Offset(cx + shoulderHalf, h * 0.24f),
-            strokeWidth = 2f
-        )
-        drawLine(
-            color = Color(0xFFE85D56).copy(alpha = 0.65f),
-            start = Offset(cx - waistHalf, h * 0.42f),
-            end = Offset(cx + waistHalf, h * 0.42f),
-            strokeWidth = 2f
-        )
     }
 }

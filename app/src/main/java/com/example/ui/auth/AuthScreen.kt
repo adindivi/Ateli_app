@@ -1,11 +1,8 @@
 package com.example.ui.auth
 
-import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -36,7 +33,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -62,9 +58,6 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.exceptions.GetCredentialCancellationException
-import androidx.credentials.exceptions.GetCredentialException
-import com.example.BuildConfig
-import com.example.R
 import com.example.ui.theme.ZigzagAppBanner
 import com.example.ui.theme.ZigzagBody
 import com.example.ui.theme.ZigzagBuyCta
@@ -76,7 +69,6 @@ import com.example.ui.theme.ZigzagHairline
 import com.example.ui.theme.ZigzagHeading
 import com.example.ui.theme.ZigzagMetadata
 import com.example.ui.theme.ZigzagMoreButton
-import com.example.ui.theme.ZigzagMuted
 import com.example.ui.theme.ZigzagPillText
 import com.example.ui.theme.ZigzagSecondary
 import com.example.ui.theme.ZigzagStrong
@@ -84,7 +76,6 @@ import com.example.ui.theme.ZigzagTabSelected
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.Firebase
-import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth

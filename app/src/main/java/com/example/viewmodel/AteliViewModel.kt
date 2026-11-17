@@ -37,7 +37,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
-import kotlin.math.abs
 
 private const val TAG = "AteliVM"
 

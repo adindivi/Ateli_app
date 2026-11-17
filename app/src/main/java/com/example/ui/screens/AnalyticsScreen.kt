@@ -63,7 +63,6 @@ import com.example.util.toFormattedWon
 import com.example.ui.components.StitchFixBuyOrNotSimulatorCard
 import com.example.ui.components.StylebookBreakEvenTrackerCard
 import com.example.ui.components.parseHexColorSafe
-import com.example.ui.theme.ZigzagAppBanner
 import com.example.ui.theme.ZigzagCanvas
 import com.example.ui.theme.ZigzagCtaBlack
 import com.example.ui.theme.ZigzagCtaText
