@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -104,12 +105,17 @@ fun AiStylistChatScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .testTag("ai_stylist_chat_screen")
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .widthIn(max = 720.dp)
+                .padding(16.dp)
+                .testTag("ai_stylist_chat_screen")
+        ) {
         // 1. Stylist Persona & Gemini Model Selector Header
         Card(
             shape = RoundedCornerShape(8.dp),
@@ -332,6 +338,7 @@ fun AiStylistChatScreen(
             }
         }
     }
+}
 }
 
 @Composable

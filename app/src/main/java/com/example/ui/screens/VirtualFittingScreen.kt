@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -236,13 +238,18 @@ fun VirtualFittingScreen(
         return
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-            .testTag("virtual_fitting_screen")
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
     ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 840.dp)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .testTag("virtual_fitting_screen")
+        ) {
         // 0. Top Sub-Tab Switcher (ZIGZAG 24dp control pill)
         Surface(
             shape = RoundedCornerShape(24.dp),
@@ -413,16 +420,10 @@ fun VirtualFittingScreen(
                                 containerColor = AtelierCoral,
                                 contentColor = Color.White
                             ),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.testTag("random_roulette_button")
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Casino,
-                                contentDescription = "랜덤 코디 룰렛",
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
                             Text("랜덤 룰렛", style = MaterialTheme.typography.labelLarge)
                         }
 
@@ -858,6 +859,7 @@ fun VirtualFittingScreen(
             Text("오늘 이 코디 입기 & 저장 (착용 횟수 +1 자동 반영)")
         }
     }
+}
 }
 
 @Composable
