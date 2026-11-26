@@ -62,6 +62,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -145,7 +146,11 @@ object Overlay3DRigCalculator {
  * Dedicated 3D Mannequin + Multi-Layer Garment Overlay Fitting Canvas UI Component.
  * Renders a volumetric 3D-shaded mannequin from the user's body measurements (`AvatarBodyMetrics`)
  * and overlays selected garments (`OUTER`, `TOP`, `BOTTOM`, `SHOES`) with anatomical anchor snapping,
- * 3D perspective foreshortening, drop shadow casting, X-Ray opacity inspection, and Z-layer controls.
+ * 3D perspective foreshortening, X-Ray opacity inspection, and Z-layer controls.
+ *
+ * Benchmark References:
+ * - IDM-VTON / OOTDiffusion: https://github.com/yisol/IDM-VTON , https://github.com/levihsu/OOTDiffusion
+ * - 4D-Humans Parametric Rig: https://github.com/shubham-goel/4D-Humans
  */
 @Composable
 fun ThreeDOverlayFittingCanvas(
@@ -347,197 +352,125 @@ fun ThreeDOverlayFittingCanvas(
             // Z=1: SHOES OVERLAY LAYER (Anchored to 3D Ankle Rig)
             // =========================================================================
             if (shoesGarment != null && showShoesLayer) {
-                val baseXPx = with(density) { rig.shoesAnchorOffsetDp.x.dp.toPx() }
-                val baseYPx = with(density) { rig.shoesAnchorOffsetDp.y.dp.toPx() }
-                Box(
-                    modifier = Modifier
-                        .zIndex(1f)
-                        .offset {
-                            IntOffset(
-                                (baseXPx + shoesDeltaX).roundToInt(),
-                                (baseYPx + shoesDeltaY).roundToInt()
-                            )
-                        }
-                        .size(98.dp)
-                        .graphicsLayer {
-                            scaleX = garmentScale * (0.85f + 0.15f * rig.perspectiveCos)
-                            scaleY = garmentScale
-                            rotationY = -rig.yawAngleDeg * 0.35f
-                            alpha = fabricOpacity
-                        }
-                        .pointerInput(shoesGarment.id, autoMagneticSnap) {
-                            detectDragGestures(
-                                onDragEnd = {
-                                    if (autoMagneticSnap && abs(shoesDeltaX) < 36f && abs(shoesDeltaY) < 36f) {
-                                        shoesDeltaX = 0f
-                                        shoesDeltaY = 0f
-                                    }
-                                }
-                            ) { change, dragAmount ->
-                                change.consume()
-                                activeLayerKey = "SHOES"
-                                shoesDeltaX += dragAmount.x
-                                shoesDeltaY += dragAmount.y
-                            }
-                        }
-                        .testTag("overlay_layer_shoes")
-                ) {
-                    GarmentCutoutIllustration(
-                        garment = shoesGarment,
-                        cutoutBitmap = cutoutBitmaps[shoesGarment.id],
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
+                FittingGarmentOverlayLayer(
+                    garment = shoesGarment,
+                    cutoutBitmap = cutoutBitmaps[shoesGarment.id],
+                    zIndex = 1f,
+                    anchorOffsetDp = rig.shoesAnchorOffsetDp,
+                    readDeltaX = { shoesDeltaX },
+                    readDeltaY = { shoesDeltaY },
+                    layerSize = 98.dp,
+                    scaleX = garmentScale * (0.85f + 0.15f * rig.perspectiveCos),
+                    scaleY = garmentScale,
+                    rotationY = -rig.yawAngleDeg * 0.35f,
+                    fabricOpacity = fabricOpacity,
+                    autoMagneticSnap = autoMagneticSnap,
+                    onDragDelta = { dx, dy ->
+                        activeLayerKey = "SHOES"
+                        shoesDeltaX += dx
+                        shoesDeltaY += dy
+                    },
+                    onSnapReset = {
+                        shoesDeltaX = 0f
+                        shoesDeltaY = 0f
+                    },
+                    tag = "overlay_layer_shoes"
+                )
             }
 
             // =========================================================================
             // Z=2: BOTTOM OVERLAY LAYER (Anchored to 3D Waist/Hip/Leg Rig)
             // =========================================================================
             if (bottomGarment != null && showBottomLayer) {
-                val baseXPx = with(density) { rig.bottomAnchorOffsetDp.x.dp.toPx() }
-                val baseYPx = with(density) { rig.bottomAnchorOffsetDp.y.dp.toPx() }
-                val bottomBaseSizeDp = (160f * rig.bottomWidthScale).dp
-
-                Box(
-                    modifier = Modifier
-                        .zIndex(2f)
-                        .offset {
-                            IntOffset(
-                                (baseXPx + bottomDeltaX).roundToInt(),
-                                (baseYPx + bottomDeltaY).roundToInt()
-                            )
-                        }
-                        .size(bottomBaseSizeDp)
-                        .graphicsLayer {
-                            scaleX = garmentScale
-                            scaleY = garmentScale * rig.bottomHeightScale
-                            rotationY = -rig.yawAngleDeg * 0.45f
-                            alpha = fabricOpacity
-                            shadowElevation = 8f
-                        }
-                        .pointerInput(bottomGarment.id, autoMagneticSnap) {
-                            detectDragGestures(
-                                onDragEnd = {
-                                    if (autoMagneticSnap && abs(bottomDeltaX) < 36f && abs(bottomDeltaY) < 36f) {
-                                        bottomDeltaX = 0f
-                                        bottomDeltaY = 0f
-                                    }
-                                }
-                            ) { change, dragAmount ->
-                                change.consume()
-                                activeLayerKey = "BOTTOM"
-                                bottomDeltaX += dragAmount.x
-                                bottomDeltaY += dragAmount.y
-                            }
-                        }
-                        .testTag("overlay_layer_bottom")
-                ) {
-                    GarmentCutoutIllustration(
-                        garment = bottomGarment,
-                        cutoutBitmap = cutoutBitmaps[bottomGarment.id],
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
+                FittingGarmentOverlayLayer(
+                    garment = bottomGarment,
+                    cutoutBitmap = cutoutBitmaps[bottomGarment.id],
+                    zIndex = 2f,
+                    anchorOffsetDp = rig.bottomAnchorOffsetDp,
+                    readDeltaX = { bottomDeltaX },
+                    readDeltaY = { bottomDeltaY },
+                    layerSize = (192f * rig.bottomWidthScale).dp,
+                    scaleX = garmentScale,
+                    scaleY = garmentScale * rig.bottomHeightScale,
+                    rotationY = -rig.yawAngleDeg * 0.45f,
+                    fabricOpacity = fabricOpacity,
+                    autoMagneticSnap = autoMagneticSnap,
+                    onDragDelta = { dx, dy ->
+                        activeLayerKey = "BOTTOM"
+                        bottomDeltaX += dx
+                        bottomDeltaY += dy
+                    },
+                    onSnapReset = {
+                        bottomDeltaX = 0f
+                        bottomDeltaY = 0f
+                    },
+                    tag = "overlay_layer_bottom"
+                )
             }
 
             // =========================================================================
             // Z=3: TOP OVERLAY LAYER (Anchored to 3D Shoulder/Chest/Torso Rig)
             // =========================================================================
             if (topGarment != null && showTopLayer) {
-                val baseXPx = with(density) { rig.topAnchorOffsetDp.x.dp.toPx() }
-                val baseYPx = with(density) { rig.topAnchorOffsetDp.y.dp.toPx() }
-                val topBaseSizeDp = (152f * rig.topWidthScale).dp
-
-                Box(
-                    modifier = Modifier
-                        .zIndex(3f)
-                        .offset {
-                            IntOffset(
-                                (baseXPx + topDeltaX).roundToInt(),
-                                (baseYPx + topDeltaY).roundToInt()
-                            )
-                        }
-                        .size(topBaseSizeDp)
-                        .graphicsLayer {
-                            scaleX = garmentScale
-                            scaleY = garmentScale
-                            rotationY = -rig.yawAngleDeg * 0.48f
-                            alpha = fabricOpacity
-                            shadowElevation = 12f
-                        }
-                        .pointerInput(topGarment.id, autoMagneticSnap) {
-                            detectDragGestures(
-                                onDragEnd = {
-                                    if (autoMagneticSnap && abs(topDeltaX) < 36f && abs(topDeltaY) < 36f) {
-                                        topDeltaX = 0f
-                                        topDeltaY = 0f
-                                    }
-                                }
-                            ) { change, dragAmount ->
-                                change.consume()
-                                activeLayerKey = "TOP"
-                                topDeltaX += dragAmount.x
-                                topDeltaY += dragAmount.y
-                            }
-                        }
-                        .testTag("overlay_layer_top")
-                ) {
-                    GarmentCutoutIllustration(
-                        garment = topGarment,
-                        cutoutBitmap = cutoutBitmaps[topGarment.id],
-                        modifier = Modifier.fillMaxSize()
-                    )
+                val topBaseSizeDp = if (outerGarment != null && showOuterLayer) {
+                    (116f * rig.topWidthScale).dp
+                } else {
+                    (144f * rig.topWidthScale).dp
                 }
+                FittingGarmentOverlayLayer(
+                    garment = topGarment,
+                    cutoutBitmap = cutoutBitmaps[topGarment.id],
+                    zIndex = 3f,
+                    anchorOffsetDp = rig.topAnchorOffsetDp,
+                    readDeltaX = { topDeltaX },
+                    readDeltaY = { topDeltaY },
+                    layerSize = topBaseSizeDp,
+                    scaleX = garmentScale,
+                    scaleY = garmentScale,
+                    rotationY = -rig.yawAngleDeg * 0.48f,
+                    fabricOpacity = fabricOpacity,
+                    autoMagneticSnap = autoMagneticSnap,
+                    onDragDelta = { dx, dy ->
+                        activeLayerKey = "TOP"
+                        topDeltaX += dx
+                        topDeltaY += dy
+                    },
+                    onSnapReset = {
+                        topDeltaX = 0f
+                        topDeltaY = 0f
+                    },
+                    tag = "overlay_layer_top"
+                )
             }
 
             // =========================================================================
             // Z=4: OUTER OVERLAY LAYER (Anchored to 3D Collar/Shoulder Rig with Parallax)
             // =========================================================================
             if (outerGarment != null && showOuterLayer) {
-                val baseXPx = with(density) { rig.outerAnchorOffsetDp.x.dp.toPx() }
-                val baseYPx = with(density) { rig.outerAnchorOffsetDp.y.dp.toPx() }
-                val outerBaseSizeDp = (174f * rig.outerWidthScale).dp
-
-                Box(
-                    modifier = Modifier
-                        .zIndex(4f)
-                        .offset {
-                            IntOffset(
-                                (baseXPx + outerDeltaX).roundToInt(),
-                                (baseYPx + outerDeltaY).roundToInt()
-                            )
-                        }
-                        .size(outerBaseSizeDp)
-                        .graphicsLayer {
-                            scaleX = garmentScale
-                            scaleY = garmentScale
-                            rotationY = -rig.yawAngleDeg * 0.52f
-                            alpha = fabricOpacity
-                            shadowElevation = 16f
-                        }
-                        .pointerInput(outerGarment.id, autoMagneticSnap) {
-                            detectDragGestures(
-                                onDragEnd = {
-                                    if (autoMagneticSnap && abs(outerDeltaX) < 36f && abs(outerDeltaY) < 36f) {
-                                        outerDeltaX = 0f
-                                        outerDeltaY = 0f
-                                    }
-                                }
-                            ) { change, dragAmount ->
-                                change.consume()
-                                activeLayerKey = "OUTER"
-                                outerDeltaX += dragAmount.x
-                                outerDeltaY += dragAmount.y
-                            }
-                        }
-                        .testTag("overlay_layer_outer")
-                ) {
-                    GarmentCutoutIllustration(
-                        garment = outerGarment,
-                        cutoutBitmap = cutoutBitmaps[outerGarment.id],
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
+                FittingGarmentOverlayLayer(
+                    garment = outerGarment,
+                    cutoutBitmap = cutoutBitmaps[outerGarment.id],
+                    zIndex = 4f,
+                    anchorOffsetDp = rig.outerAnchorOffsetDp,
+                    readDeltaX = { outerDeltaX },
+                    readDeltaY = { outerDeltaY },
+                    layerSize = (184f * rig.outerWidthScale).dp,
+                    scaleX = garmentScale,
+                    scaleY = garmentScale,
+                    rotationY = -rig.yawAngleDeg * 0.52f,
+                    fabricOpacity = fabricOpacity,
+                    autoMagneticSnap = autoMagneticSnap,
+                    onDragDelta = { dx, dy ->
+                        activeLayerKey = "OUTER"
+                        outerDeltaX += dx
+                        outerDeltaY += dy
+                    },
+                    onSnapReset = {
+                        outerDeltaX = 0f
+                        outerDeltaY = 0f
+                    },
+                    tag = "overlay_layer_outer"
+                )
             }
 
             // Bottom Floating Z-Layer Stack & Visibility Dock inside the 3D Stage
@@ -988,5 +921,75 @@ private fun Volumetric3DMannequinCanvas(
                 )
             }
         }
+    }
+}
+
+private const val MAGNETIC_SNAP_THRESHOLD_PX = 36f
+
+/**
+ * Renders a single 3D-rigged draggable garment overlay layer on the virtual mannequin canvas,
+ * applying perspective foreshortening, yaw rotation, and magnetic snap-back on release.
+ */
+@Composable
+private fun FittingGarmentOverlayLayer(
+    garment: Garment,
+    cutoutBitmap: Bitmap?,
+    zIndex: Float,
+    anchorOffsetDp: Offset,
+    readDeltaX: () -> Float,
+    readDeltaY: () -> Float,
+    layerSize: Dp,
+    scaleX: Float,
+    scaleY: Float,
+    rotationY: Float,
+    fabricOpacity: Float,
+    autoMagneticSnap: Boolean,
+    onDragDelta: (dx: Float, dy: Float) -> Unit,
+    onSnapReset: () -> Unit,
+    tag: String
+) {
+    val density = LocalDensity.current
+    val baseXPx = with(density) { anchorOffsetDp.x.dp.toPx() }
+    val baseYPx = with(density) { anchorOffsetDp.y.dp.toPx() }
+
+    Box(
+        modifier = Modifier
+            .zIndex(zIndex)
+            .offset {
+                IntOffset(
+                    (baseXPx + readDeltaX()).roundToInt(),
+                    (baseYPx + readDeltaY()).roundToInt()
+                )
+            }
+            .size(layerSize)
+            .graphicsLayer {
+                this.scaleX = scaleX
+                this.scaleY = scaleY
+                this.rotationY = rotationY
+                alpha = fabricOpacity
+            }
+            .pointerInput(garment.id, autoMagneticSnap) {
+                detectDragGestures(
+                    onDragEnd = {
+                        if (
+                            autoMagneticSnap &&
+                            abs(readDeltaX()) < MAGNETIC_SNAP_THRESHOLD_PX &&
+                            abs(readDeltaY()) < MAGNETIC_SNAP_THRESHOLD_PX
+                        ) {
+                            onSnapReset()
+                        }
+                    }
+                ) { change, dragAmount ->
+                    change.consume()
+                    onDragDelta(dragAmount.x, dragAmount.y)
+                }
+            }
+            .testTag(tag)
+    ) {
+        GarmentCutoutIllustration(
+            garment = garment,
+            cutoutBitmap = cutoutBitmap,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }

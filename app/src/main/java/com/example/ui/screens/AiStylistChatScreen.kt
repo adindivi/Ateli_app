@@ -76,7 +76,8 @@ fun AiStylistChatScreen(
     weather: WeatherContext,
     onSelectModel: (String) -> Unit,
     onSendMessage: (String, UserProfile, List<Garment>, WeatherContext) -> Unit,
-    onClearChat: () -> Unit
+    onClearChat: () -> Unit,
+    onShowToast: (String) -> Unit = {}
 ) {
     val profile = (profileState as? DataUiState.Success)?.data ?: UserProfile()
     val garments = (garmentsState as? DataUiState.Success)?.data ?: emptyList()
@@ -87,10 +88,10 @@ fun AiStylistChatScreen(
     val listState = rememberLazyListState()
 
     val quickPrompts = listOf(
-        "내 ${bodyShape.labelKo}과 오늘 날씨(${weather.temperatureC.toInt()}°C)에 맞는 출근룩 추천해줘",
-        "내 옷장에서 CPW(가성비)가 가장 아쉬운 방치템 활용 코디 짜줘",
-        "보유한 상의·하의 색상 조합으로 주말 데이트룩 2가지 비교해줘",
-        "내 옷장 구성을 분석해서 다음에 사면 좋을 필수 아이템 1개만 추천해줘"
+        "오늘 뭐 입고 나갈까요?",
+        "안 입는 옷 어떻게 입을까요?",
+        "주말 코디 추천해줘요",
+        "새로 사면 좋을 옷이 뭘까요?"
     )
 
     LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length) {
@@ -106,7 +107,7 @@ fun AiStylistChatScreen(
         Column(
             modifier = Modifier
                 .fillMaxHeight()
-                .widthIn(max = 720.dp)
+                .widthIn(max = 680.dp)
                 .padding(16.dp)
                 .testTag("ai_stylist_chat_screen")
         ) {
@@ -141,7 +142,7 @@ fun AiStylistChatScreen(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "AI 퍼스널 스타일리스트",
+                                text = "AI 코디",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = ZigzagStrong,
                                 fontWeight = FontWeight.SemiBold
@@ -176,6 +177,7 @@ fun AiStylistChatScreen(
                         onSecondaryClick = {
                             onClearChat()
                             showClearChatDialog = false
+                            onShowToast("대화 내용이 깨끗하게 정리되었어요")
                         },
                         onDismissRequest = { showClearChatDialog = false },
                         accentBadgeText = "안심 안내"
@@ -184,42 +186,70 @@ fun AiStylistChatScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Model Tier Switcher (gemini-3.8-flash vs gemini-4-argon)
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                // Model Tier Switcher (Integrated Segmented Bar)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF1F5F9),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = if (selectedModelName == "gemini-3.8-flash") ZigzagStrong else ZigzagCanvas,
-                        border = BorderStroke(1.dp, if (selectedModelName == "gemini-3.8-flash") ZigzagStrong else ZigzagHairline),
-                        onClick = { onSelectModel("gemini-3.8-flash") },
-                        modifier = Modifier.testTag("model_chip_flash")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(3.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Text(
-                            text = "⚡ 일반 상담 (Flash)",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                            color = if (selectedModelName == "gemini-3.8-flash") Color.White else ZigzagSecondary,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = if (selectedModelName == "gemini-4-argon") ZigzagStrong else ZigzagCanvas,
-                        border = BorderStroke(1.dp, if (selectedModelName == "gemini-4-argon") ZigzagStrong else ZigzagHairline),
-                        onClick = { onSelectModel("gemini-4-argon") },
-                        modifier = Modifier.testTag("model_chip_argon")
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                        val isFlash = selectedModelName == "gemini-3.8-flash"
+                        Surface(
+                            shape = RoundedCornerShape(9.dp),
+                            color = if (isFlash) ZigzagStrong else Color.Transparent,
+                            onClick = {
+                                onSelectModel("gemini-3.8-flash")
+                                onShowToast("빠른 추천 모드로 전환했어요")
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(36.dp)
+                                .testTag("model_chip_flash")
                         ) {
-                            Text(
-                                text = "심층 분석 (Argon)",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                                color = if (selectedModelName == "gemini-4-argon") Color.White else ZigzagSecondary
-                            )
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "빠른 추천",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = if (isFlash) FontWeight.Bold else FontWeight.Medium
+                                    ),
+                                    color = if (isFlash) Color.White else ZigzagSecondary,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+
+                        val isArgon = selectedModelName == "gemini-4-argon"
+                        Surface(
+                            shape = RoundedCornerShape(9.dp),
+                            color = if (isArgon) ZigzagStrong else Color.Transparent,
+                            onClick = {
+                                onSelectModel("gemini-4-argon")
+                                onShowToast("상세 분석 모드로 전환했어요")
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(36.dp)
+                                .testTag("model_chip_argon")
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "상세 분석",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = if (isArgon) FontWeight.Bold else FontWeight.Medium
+                                    ),
+                                    color = if (isArgon) Color.White else ZigzagSecondary,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
                         }
                     }
                 }
@@ -284,7 +314,7 @@ fun AiStylistChatScreen(
             OutlinedTextField(
                 value = inputText,
                 onValueChange = { inputText = it },
-                placeholder = { Text("체형 고민, 코디 매칭 등 무엇이든 물어보세요...", color = ZigzagMuted) },
+                placeholder = { Text("코디 고민을 편하게 남겨보세요...", color = ZigzagMuted) },
                 maxLines = 3,
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -303,7 +333,7 @@ fun AiStylistChatScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Surface(
                 shape = CircleShape,
-                color = if (inputText.isNotBlank() && !isStreaming) ZigzagCtaBlack else ZigzagHairline,
+                color = if (inputText.isNotBlank() && !isStreaming) Color(0xFF0071E3) else Color(0xFFF1F5F9),
                 modifier = Modifier
                     .size(48.dp)
                     .clickable(enabled = inputText.isNotBlank() && !isStreaming) {
@@ -324,7 +354,7 @@ fun AiStylistChatScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = "메시지 전송",
-                            tint = if (inputText.isNotBlank()) ZigzagCtaText else ZigzagMuted,
+                            tint = if (inputText.isNotBlank()) Color.White else ZigzagMuted,
                             modifier = Modifier.size(20.dp)
                         )
                     }

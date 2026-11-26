@@ -91,6 +91,7 @@ data class UserProfile(
     val waistCm: Long = 74L,
     val bodyShape: String = BodyShapeType.RECTANGLE.code,
     val skinToneHex: String = "#F3D6C1",
+    val personalColorTone: String = "SPRING_WARM_LIGHT",
     val preferredCity: String = "Seoul",
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null
@@ -104,6 +105,7 @@ data class UserProfile(
         "waistCm" to waistCm.coerceIn(45L, 150L),
         "bodyShape" to BodyShapeType.fromCode(bodyShape).code,
         "skinToneHex" to skinToneHex.take(10).ifBlank { "#F3D6C1" },
+        "personalColorTone" to personalColorTone.take(30).ifBlank { "SPRING_WARM_LIGHT" },
         "preferredCity" to preferredCity.take(50).ifBlank { "Seoul" },
         "createdAt" to FieldValue.serverTimestamp(),
         "updatedAt" to FieldValue.serverTimestamp()
@@ -117,6 +119,7 @@ data class UserProfile(
         "waistCm" to waistCm.coerceIn(45L, 150L),
         "bodyShape" to BodyShapeType.fromCode(bodyShape).code,
         "skinToneHex" to skinToneHex.take(10).ifBlank { "#F3D6C1" },
+        "personalColorTone" to personalColorTone.take(30).ifBlank { "SPRING_WARM_LIGHT" },
         "preferredCity" to preferredCity.take(50).ifBlank { "Seoul" },
         "updatedAt" to FieldValue.serverTimestamp()
     )
@@ -139,6 +142,7 @@ data class Garment(
     val tpoTags: List<String> = emptyList(),
     val purchasePrice: Long = 0L,
     val wearCount: Long = 0L,
+    val imageUrl: String? = null,
     val sourceType: String = "RECEIPT_AUTO",
     val receiptStore: String? = null,
     @ServerTimestamp val createdAt: Timestamp? = null,
@@ -166,6 +170,10 @@ data class Garment(
             return ((wearCount.toDouble() / targetWears.toDouble()) * 100.0).toInt().coerceIn(5, 100)
         }
 
+    /** Unique UI key shared by Wardrobe grid cards, selection state, and fitting overlay cards. */
+    val stableKey: String
+        get() = id.ifBlank { "${name}_${brand}_${category}" }
+
     fun toCreateMap(uid: String): Map<String, Any> {
         val base = mutableMapOf<String, Any>(
             "userId" to uid,
@@ -182,10 +190,13 @@ data class Garment(
             "tpoTags" to tpoTags.map { it.take(30) }.take(10),
             "purchasePrice" to purchasePrice.coerceIn(0L, 100_000_000L),
             "wearCount" to wearCount.coerceIn(0L, 10_000L),
-            "sourceType" to if (sourceType in listOf("RECEIPT_AUTO", "CAMERA_AI", "CURATED_SAMPLE")) sourceType else "RECEIPT_AUTO",
+            "sourceType" to if (sourceType in listOf("RECEIPT_AUTO", "CAMERA_AI", "CURATED_SAMPLE", "PHOTO_CUTOUT")) sourceType else "RECEIPT_AUTO",
             "createdAt" to FieldValue.serverTimestamp(),
             "updatedAt" to FieldValue.serverTimestamp()
         )
+        if (!imageUrl.isNullOrBlank() && !imageUrl.startsWith("asset://")) {
+            base["imageUrl"] = imageUrl
+        }
         if (!receiptStore.isNullOrBlank()) {
             base["receiptStore"] = receiptStore.take(80)
         }
@@ -237,7 +248,55 @@ data class SampleReceiptTemplate(
     val rawReceiptText: String
 )
 
+/**
+ * CuratedWardrobePresets
+ *
+ * 실물 의류 누끼 스튜디오 컷아웃 에셋(Transparent RGBA WebP) 및 전자영수증 프리셋 관리 객체.
+ *
+ * Verified Cutout Image References:
+ * - Beige Trench Coat: https://pngimg.com/uploads/coat/coat_PNG33.png
+ * - Tailored Wool Blazer: https://www.pngall.com/wp-content/uploads/2016/09/Blazer-PNG.png
+ * - Sky Blue Oxford Shirt: https://www.pngall.com/wp-content/uploads/24/Dress-Shirt-Light-Blue-Buttoned-Long-Sleeve-PNG.png
+ * - Cream Knit Pullover: https://www.pngall.com/wp-content/uploads/24/Sweater-Beige-Ribbed-Knit-Long-Sleeve-PNG.png
+ * - Sage Utility Field Jacket: https://pngimg.com/uploads/jacket/jacket_PNG8037.png
+ * - Charcoal Tailored Slacks: https://www.pngall.com/wp-content/uploads/2016/09/Trouser-PNG-Image.png
+ * - Straight Indigo Denim: https://pngimg.com/uploads/jeans/jeans_PNG5745.png
+ * - Espresso Leather Dress Shoes: https://pngimg.com/uploads/men_shoes/men_shoes_PNG7491.png
+ * - Heritage Grey Running Sneakers (993): https://pngimg.com/uploads/running_shoes/running_shoes_PNG5792.png
+ */
 object CuratedWardrobePresets {
+    private val PRESET_ASSET_RULES: List<Pair<List<String>, String>> = listOf(
+        listOf("트렌치", "맥코트", "코트") to "asset://garments/garment_trench_beige.webp",
+        listOf("블레이저", "수트", "울 자켓") to "asset://garments/garment_blazer_charcoal.webp",
+        listOf("윈드브레이커", "바람막이", "필드", "유틸리티") to "asset://garments/garment_jacket_sage.webp",
+        listOf("자켓", "재킷", "아우터") to "asset://garments/garment_blazer_charcoal.webp",
+        listOf("셔츠", "옥스포드", "포플린") to "asset://garments/garment_shirt_skyblue.webp",
+        listOf("니트", "스웨터", "풀오버", "캐시미어") to "asset://garments/garment_sweater_cream.webp",
+        listOf("데님", "청바지", "진", "셀비지") to "asset://garments/garment_jeans_indigo.webp",
+        listOf("슬랙스", "팬츠", "트라우저", "치노") to "asset://garments/garment_slacks_charcoal.webp",
+        listOf("로퍼", "더비", "구두") to "asset://garments/garment_loafer_brown.webp",
+        listOf("스니커즈", "러닝", "운동화", "993") to "asset://garments/garment_sneaker_grey.webp"
+    )
+
+    private val CATEGORY_FALLBACK_ASSETS: Map<String, String> = mapOf(
+        "OUTER" to "asset://garments/garment_trench_beige.webp",
+        "TOP" to "asset://garments/garment_shirt_skyblue.webp",
+        "BOTTOM" to "asset://garments/garment_slacks_charcoal.webp",
+        "SHOES" to "asset://garments/garment_sneaker_grey.webp"
+    )
+
+    fun resolvePresetImageAsset(
+        name: String,
+        subCategory: String = "",
+        category: String = ""
+    ): String? {
+        val text = "$name $subCategory".lowercase()
+        val matchedAsset = PRESET_ASSET_RULES
+            .firstOrNull { (keywords, _) -> keywords.any { text.contains(it) } }
+            ?.second
+        return matchedAsset ?: CATEGORY_FALLBACK_ASSETS[category]
+    }
+
     val sampleReceiptTemplates = listOf(
         SampleReceiptTemplate(
             title = "무신사 스토어 가을 아우터/하의 결제 영수증",
@@ -272,6 +331,7 @@ object CuratedWardrobePresets {
 
     fun starterWardrobeItems(): List<Garment> = listOf(
         Garment(
+            id = "starter_01_trench",
             name = "발마칸 오버핏 트렌치 맥코트",
             brand = "무신사 스탠다드",
             category = "OUTER",
@@ -285,16 +345,18 @@ object CuratedWardrobePresets {
             tpoTags = listOf("출근", "데이트", "하객룩"),
             purchasePrice = 139000L,
             wearCount = 14L,
+            imageUrl = "asset://garments/garment_trench_beige.webp",
             sourceType = "RECEIPT_AUTO",
             receiptStore = "MUSINSA"
         ),
         Garment(
+            id = "starter_02_blazer",
             name = "테일러드 싱글 울 블레이저",
             brand = "쿠어 (COOR)",
             category = "OUTER",
             subCategory = "블레이저",
-            colorName = "미드나잇 네이비",
-            colorHex = "#1F2A44",
+            colorName = "미드나잇 차콜",
+            colorHex = "#22252A",
             season = "SPRING_FALL",
             pattern = "솔리드",
             thickness = "MEDIUM",
@@ -302,50 +364,56 @@ object CuratedWardrobePresets {
             tpoTags = listOf("출근", "하객룩", "발표"),
             purchasePrice = 248000L,
             wearCount = 2L,
+            imageUrl = "asset://garments/garment_blazer_charcoal.webp",
             sourceType = "RECEIPT_AUTO",
             receiptStore = "29CM"
         ),
         Garment(
-            name = "크리스피 옥스포드 스트라이프 셔츠",
+            id = "starter_03_shirt",
+            name = "크리스피 옥스포드 포플린 셔츠",
             brand = "폴로 랄프로렌",
             category = "TOP",
             subCategory = "셔츠",
             colorName = "스카이 블루",
-            colorHex = "#8BB8E8",
+            colorHex = "#9AC3EC",
             season = "ALL",
-            pattern = "스트라이프",
+            pattern = "솔리드",
             thickness = "LIGHT",
             waterResistant = false,
             tpoTags = listOf("출근", "데이트", "하객룩"),
             purchasePrice = 169000L,
             wearCount = 22L,
+            imageUrl = "asset://garments/garment_shirt_skyblue.webp",
             sourceType = "RECEIPT_AUTO",
             receiptStore = "SSF샵"
         ),
         Garment(
-            name = "캐시미어 블렌드 케이블 니트",
+            id = "starter_04_knit",
+            name = "캐시미어 블렌드 립 니트",
             brand = "던스트 (Dunst)",
             category = "TOP",
             subCategory = "니트 풀오버",
             colorName = "버터 크림",
-            colorHex = "#F3E5AB",
+            colorHex = "#EBD4A7",
             season = "SPRING_FALL",
-            pattern = "케이블",
+            pattern = "골지 립",
             thickness = "MEDIUM",
             waterResistant = false,
             tpoTags = listOf("데이트", "주말 나들이", "출근"),
             purchasePrice = 98000L,
             wearCount = 9L,
+            imageUrl = "asset://garments/garment_sweater_cream.webp",
             sourceType = "CAMERA_AI",
             receiptStore = "직접 촬영 (AI 누끼)"
         ),
         Garment(
-            name = "에어리 테크 집업 윈드브레이커",
+            id = "starter_05_jacket",
+            name = "에어리 테크 필드 유틸리티 자켓",
             brand = "아크테릭스",
             category = "OUTER",
-            subCategory = "바람막이",
+            subCategory = "유틸리티 자켓",
             colorName = "세이지 그린",
-            colorHex = "#5F7A61",
+            colorHex = "#6E735E",
             season = "SPRING_FALL",
             pattern = "솔리드",
             thickness = "LIGHT",
@@ -353,16 +421,18 @@ object CuratedWardrobePresets {
             tpoTags = listOf("운동", "주말 나들이"),
             purchasePrice = 320000L,
             wearCount = 0L,
+            imageUrl = "asset://garments/garment_jacket_sage.webp",
             sourceType = "RECEIPT_AUTO",
             receiptStore = "EQL"
         ),
         Garment(
+            id = "starter_06_slacks",
             name = "원턱 와이드 테일러드 슬랙스",
             brand = "드로우핏",
             category = "BOTTOM",
             subCategory = "와이드 슬랙스",
             colorName = "차콜 그레이",
-            colorHex = "#36393F",
+            colorHex = "#2E2E30",
             season = "ALL",
             pattern = "솔리드",
             thickness = "MEDIUM",
@@ -370,16 +440,18 @@ object CuratedWardrobePresets {
             tpoTags = listOf("출근", "하객룩", "데이트"),
             purchasePrice = 68000L,
             wearCount = 19L,
+            imageUrl = "asset://garments/garment_slacks_charcoal.webp",
             sourceType = "RECEIPT_AUTO",
             receiptStore = "MUSINSA"
         ),
         Garment(
+            id = "starter_07_jeans",
             name = "셀비지 스트레이트 인디고 데님",
             brand = "리바이스",
             category = "BOTTOM",
             subCategory = "데님 팬츠",
             colorName = "인디고 블루",
-            colorHex = "#2B4C7E",
+            colorHex = "#35537A",
             season = "ALL",
             pattern = "솔리드",
             thickness = "MEDIUM",
@@ -387,14 +459,16 @@ object CuratedWardrobePresets {
             tpoTags = listOf("주말 나들이", "데이트", "출근"),
             purchasePrice = 129000L,
             wearCount = 11L,
+            imageUrl = "asset://garments/garment_jeans_indigo.webp",
             sourceType = "CAMERA_AI",
             receiptStore = "직접 촬영 (AI 누끼)"
         ),
         Garment(
-            name = "미니멀 페니 로퍼",
+            id = "starter_08_loafer",
+            name = "미니멀 번치드 레더 더비슈즈",
             brand = "로맨틱무브",
             category = "SHOES",
-            subCategory = "로퍼",
+            subCategory = "더비 로퍼",
             colorName = "에스프레소 브라운",
             colorHex = "#3D2B1F",
             season = "ALL",
@@ -404,11 +478,13 @@ object CuratedWardrobePresets {
             tpoTags = listOf("출근", "하객룩", "데이트"),
             purchasePrice = 158000L,
             wearCount = 16L,
+            imageUrl = "asset://garments/garment_loafer_brown.webp",
             sourceType = "RECEIPT_AUTO",
             receiptStore = "29CM"
         ),
         Garment(
-            name = "헤리티지 스웨이드 러닝 스니커즈",
+            id = "starter_09_sneaker",
+            name = "993 메이드 인 USA 스웨이드 러닝화",
             brand = "뉴발란스",
             category = "SHOES",
             subCategory = "스니커즈",
@@ -421,6 +497,7 @@ object CuratedWardrobePresets {
             tpoTags = listOf("운동", "주말 나들이", "출근"),
             purchasePrice = 219000L,
             wearCount = 0L,
+            imageUrl = "asset://garments/garment_sneaker_grey.webp",
             sourceType = "RECEIPT_AUTO",
             receiptStore = "크림 (KREAM)"
         )

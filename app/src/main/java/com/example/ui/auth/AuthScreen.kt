@@ -220,83 +220,81 @@ fun AuthScreen(
                 .padding(horizontal = 20.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ZIGZAG Icon Badge (8px rounded, subtle #F1ECEA surface)
-            Surface(
-                modifier = Modifier.size(72.dp),
-                shape = RoundedCornerShape(8.dp),
-                color = ZigzagAppBanner,
-                border = BorderStroke(1.dp, ZigzagHairline)
+            // Apple-Style Minimalist Floating Symbol (Pure silhouette on white, zero boxy borders)
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFFF5F5F7)),
+                contentAlignment = Alignment.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Checkroom,
-                        contentDescription = "Ateli 로고",
-                        tint = ZigzagStrong,
-                        modifier = Modifier.size(38.dp)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Checkroom,
+                    contentDescription = "Ateli 로고",
+                    tint = ZigzagStrong,
+                    modifier = Modifier.size(42.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = "ATELI",
                 style = ZigzagMetadata.copy(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
                     color = ZigzagSecondary,
-                    letterSpacing = 1.sp
+                    letterSpacing = 2.sp
                 )
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // ZIGZAG Heading (32px / 600 / 44.8px)
+            // Apple SF Pro Display Style Heading
             Text(
                 text = "Ateli",
-                style = ZigzagHeading,
+                style = ZigzagHeading.copy(fontWeight = FontWeight.Bold),
                 textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ZIGZAG Body (16px / 400 / #292B2B)
             Text(
-                text = "취향 발견부터 체형 맞춤 3D 가상 피팅까지\n스마트 디지털 옷장 아틀리에",
-                style = ZigzagBody,
+                text = "내 옷장 정리부터\n아바타 피팅까지 한 번에",
+                style = ZigzagBody.copy(color = ZigzagSecondary),
                 textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ZIGZAG Product-led Feature Cards (0px/8px geometry, 1px #ECEDEE hairline)
-            FeatureHighlightCard(
-                icon = Icons.Default.AutoAwesome,
-                title = "제로 에포트 옷장 (AI 영수증 & 누끼)",
-                subtitle = "쇼핑몰 영수증이나 사진 한 장으로 배경 제거부터 카테고리·태깅까지 자동 완성"
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            FeatureHighlightCard(
-                icon = Icons.Default.Checkroom,
-                title = "내 체형 맞춤 아바타 가상 피팅",
-                subtitle = "내 신체 치수 기반 3D 마네킹에 Z-index 레이어드 드래그 & 코디 조합"
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            FeatureHighlightCard(
-                icon = Icons.Default.WbSunny,
-                title = "실시간 날씨 & TPO 스마트 추천",
-                subtitle = "오늘 기온과 출근·데이트·하객룩 일정을 결합한 Gemini AI 맞춤 제안"
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            FeatureHighlightCard(
-                icon = Icons.Default.Insights,
-                title = "옷장 CPW 가성비 & 방치템 분석",
-                subtitle = "1회 착용당 비용(Cost Per Wear) 계산 및 미착용 의류 관리 알림"
             )
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // ZIGZAG Main Buy-CTA Button (46~52dp height, 24dp pill rounded, #121314 Black)
+            // ZIGZAG Product-led Feature Cards (0px/8px geometry, 1px #ECEDEE hairline)
+            FeatureHighlightCard(
+                icon = Icons.Default.AutoAwesome,
+                title = "사진 한 장으로 옷 등록",
+                subtitle = "영수증이나 사진만 올리면 옷장에 쏙 넣어드려요"
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            FeatureHighlightCard(
+                icon = Icons.Default.Checkroom,
+                title = "내 아바타에 입혀보기",
+                subtitle = "키와 몸무게를 넣고 내 옷을 직접 입혀보세요"
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            FeatureHighlightCard(
+                icon = Icons.Default.WbSunny,
+                title = "오늘 날씨 맞춤 추천",
+                subtitle = "지금 날씨에 딱 어울리는 옷을 골라드려요"
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            FeatureHighlightCard(
+                icon = Icons.Default.Insights,
+                title = "안 입는 옷 쏙 찾기",
+                subtitle = "자주 입은 옷과 옷장에 박힌 옷을 알려줘요"
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // ZIGZAG Main Buy-CTA Button (48~52dp height, 24dp pill rounded, #121314 Black)
             Button(
                 onClick = onGoogleSignInClick,
                 enabled = !isLoading,
@@ -318,7 +316,7 @@ fun AuthScreen(
                     )
                 } else {
                     Text(
-                        text = "Sign in with Google (구글 계정으로 시작하기)",
+                        text = "Google로 시작하기",
                         style = ZigzagBuyCta
                     )
                 }
@@ -341,7 +339,7 @@ fun AuthScreen(
                         .testTag("guest_tour_button")
                 ) {
                     Text(
-                        text = "로그인 없이 둘러보기 (게스트 체험)",
+                        text = "둘러볼게요",
                         style = ZigzagMoreButton
                     )
                 }
@@ -358,27 +356,26 @@ private fun FeatureHighlightCard(
     title: String,
     subtitle: String
 ) {
-    // ZIGZAG Card Pattern: 0px/8px modern geometry, #FFFFFF canvas, 1px #ECEDEE hairline
+    // Apple-Style Clean Showcase Card: 18dp curvature, soft off-white surface, minimal elegance
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp), // ZIGZAG icon/subtle corner
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = ZigzagCanvas
+            containerColor = Color(0xFFF9F9FA)
         ),
-        border = BorderStroke(1.dp, ZigzagHairline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // ZIGZAG: box-shadow none
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 18.dp, vertical = 15.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(ZigzagAppBanner),
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -392,7 +389,7 @@ private fun FeatureHighlightCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = ZigzagTabSelected,
+                    style = ZigzagTabSelected.copy(fontWeight = FontWeight.Bold),
                     color = ZigzagStrong
                 )
                 Spacer(modifier = Modifier.height(2.dp))

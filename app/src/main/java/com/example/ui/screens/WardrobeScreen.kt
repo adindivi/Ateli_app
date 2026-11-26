@@ -1,12 +1,13 @@
 package com.example.ui.screens
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,27 +35,20 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Checkroom
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -78,36 +72,43 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.CuratedWardrobePresets
 import com.example.data.model.Garment
+import com.example.data.model.UserProfile
 import com.example.ui.components.AclosetGarmentDetailModal
 import com.example.ui.components.AclosetQuickAddBottomSheet
+import com.example.ui.components.CapsuleWardrobeReportSheet
 import com.example.ui.components.FriendlyReassuranceDialog
 import com.example.ui.components.GarmentCutoutIllustration
-import com.example.ui.components.ReassuranceNoticeCard
+import com.example.ui.components.GarmentPhotoCutoutSheet
+import com.example.ui.components.PersonalColorDiagnosisDialog
 import com.example.ui.components.ZigzagBottomSheetDragHandle
-import com.example.ui.components.showFintechToast
+import com.example.ui.components.drawGarmentSilhouette
 import com.example.ui.components.parseHexColorSafe
-import com.example.util.toFormattedKrw
-import com.example.ui.theme.AtelierCoral
-import com.example.ui.theme.AtelierSage
-import com.example.ui.theme.ZigzagCanvas
-import com.example.ui.theme.ZigzagHairline
-import com.example.ui.theme.ZigzagStrong
-import com.example.ui.theme.ZigzagForeground
-import com.example.ui.theme.ZigzagSecondary
-import com.example.ui.theme.ZigzagMuted
 import com.example.ui.theme.ZigzagAppBanner
-import com.example.ui.theme.ZigzagCtaBlack
-import com.example.ui.theme.ZigzagCtaText
-import com.example.ui.theme.ZigzagPillText
+import com.example.ui.theme.ZigzagCanvas
+import com.example.ui.theme.ZigzagForeground
+import com.example.ui.theme.ZigzagHairline
+import com.example.ui.theme.ZigzagMuted
+import com.example.ui.theme.ZigzagStrong
+import com.example.util.CapsuleWardrobeOptimizer
+import com.example.util.PersonalColorAnalyzer
+import com.example.util.PersonalColorSeason
 import com.example.viewmodel.AiTaskState
 import com.example.viewmodel.DataUiState
 
+/**
+ * WardrobeScreen
+ *
+ * 에디토리얼 비주얼 그리드, 멀티 탭 코디 조합(Floating Lookbar), 실물 의류 누끼 및 코디 추천을 제공하는 스마트 옷장 메인 화면.
+ *
+ * Benchmark References:
+ * - Libre-Closet: https://github.com/Lazztech/Libre-Closet
+ * - wardrobe-graph: https://github.com/SirLocke/wardrobe-graph
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun WardrobeScreen(
@@ -118,51 +119,50 @@ fun WardrobeScreen(
     onParseReceipt: (String) -> Unit,
     onProcessPhoto: (Bitmap, Long, String) -> Unit,
     onQuickAddGarment: (Garment) -> Unit = {},
+    onPhotoCutoutRegistered: (Garment, Bitmap?) -> Unit = { _, _ -> },
     onIncrementWear: (Garment) -> Unit,
     onDeleteGarment: (String) -> Unit,
     onResetAiState: () -> Unit,
-    onOpenVirtualFitting: () -> Unit
+    onOpenVirtualFitting: () -> Unit,
+    onOpenVirtualFittingWithLook: (List<Garment>) -> Unit = { onOpenVirtualFitting() },
+    userProfileState: DataUiState<UserProfile> = DataUiState.Success(UserProfile()),
+    onSavePersonalColorTone: (PersonalColorSeason) -> Unit = {},
+    onShowToast: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val userProfile = (userProfileState as? DataUiState.Success)?.data ?: UserProfile()
+    val activeSeason = remember(userProfile.personalColorTone) {
+        PersonalColorSeason.fromCode(userProfile.personalColorTone)
+    }
+
     var selectedCategoryFilter by remember { mutableStateOf("ALL") }
     var showReceiptSheet by remember { mutableStateOf(false) }
     var showPhotoSheet by remember { mutableStateOf(false) }
     var showQuickAddSheet by remember { mutableStateOf(false) }
+    var showPersonalColorDialog by remember { mutableStateOf(false) }
+    var showCapsuleReportSheet by remember { mutableStateOf(false) }
     var detailModalGarment by remember { mutableStateOf<Garment?>(null) }
     var pendingDeleteGarment by remember { mutableStateOf<Garment?>(null) }
     var selectedBitmap by remember { mutableStateOf<Bitmap?>(null) }
-
-    // Zero-permission Android Photo Picker
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null) {
-            try {
-                context.contentResolver.openInputStream(uri)?.use { stream ->
-                    val bmp = BitmapFactory.decodeStream(stream)
-                    if (bmp != null) {
-                        selectedBitmap = bmp
-                        showPhotoSheet = true
-                    }
-                }
-            } catch (_: Exception) {
-            }
-        }
-    }
-
-    // Zero-permission Thumbnail Camera Capture
-    val cameraPreviewLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bmp ->
-        if (bmp != null) {
-            selectedBitmap = bmp
-            showPhotoSheet = true
-        }
-    }
-
     val garments = (garmentsState as? DataUiState.Success)?.data ?: emptyList()
+    var selectedGarmentIdsForLook by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val selectedGarmentsForLook = remember(selectedGarmentIdsForLook, garments) {
+        garments.filter { g ->
+            val key = g.stableKey
+            selectedGarmentIdsForLook.contains(key)
+        }
+    }
     var searchQuery by remember { mutableStateOf("") }
-    var sortMode by remember { mutableStateOf("RECENT") } // RECENT, BEST_CPW, SLEEPER_FIRST, MOST_WORN
+    var sortMode by remember { mutableStateOf("RECENT") }
+
+    val capsuleReport = remember(garments) { CapsuleWardrobeOptimizer.analyze(garments) }
+    val frequentWearRate = remember(garments) {
+        if (garments.isEmpty()) 0
+        else {
+            val frequentCount = garments.count { it.wearCount >= 2L }
+            ((frequentCount.toDouble() / garments.size.toDouble()) * 100.0).toInt()
+        }
+    }
 
     val filteredGarments = remember(garments, selectedCategoryFilter, searchQuery, sortMode) {
         val byCat = if (selectedCategoryFilter == "ALL") garments
@@ -194,356 +194,656 @@ fun WardrobeScreen(
     ) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 162.dp),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                top = 16.dp,
+                end = 16.dp,
+                bottom = if (selectedGarmentsForLook.isNotEmpty()) 104.dp else 84.dp
+            ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
-                .widthIn(max = 1200.dp)
+                .widthIn(max = 720.dp)
                 .fillMaxHeight()
                 .testTag("wardrobe_grid")
         ) {
-        // 1. Hero Header Banner (ZIGZAG Style: Clean white card, hairline border, 8px subtle corner)
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Card(
-                shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(containerColor = ZigzagCanvas),
-                border = BorderStroke(1.dp, ZigzagHairline),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
+            // 1. Slim Minimal Registration Bar (Zero-Scroll & Apple Store Style)
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(18.dp)
+                        .testTag("wardrobe_quick_action_bar"),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Surface(
-                                color = ZigzagAppBanner,
-                                shape = RoundedCornerShape(24.dp)
+                    // Button 1: 영수증 등록
+                    Button(
+                        onClick = {
+                            onResetAiState()
+                            showReceiptSheet = true
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ZigzagStrong,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1.1f)
+                            .height(44.dp)
+                            .testTag("open_receipt_sheet_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                            contentDescription = "영수증 등록",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "영수증 등록",
+                            style = TextStyle(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                            ),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+
+                    // Button 2: 사진 등록
+                    OutlinedButton(
+                        onClick = {
+                            onResetAiState()
+                            showPhotoSheet = true
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = ZigzagStrong
+                        ),
+                        border = BorderStroke(1.dp, ZigzagHairline),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("open_camera_cutout_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = "사진 등록",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "사진 등록",
+                            style = TextStyle(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                            ),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+
+                    // Button 3: 직접 등록
+                    Surface(
+                        onClick = { showQuickAddSheet = true },
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .width(76.dp)
+                            .height(44.dp)
+                            .testTag("open_quick_add_button")
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "직접 등록",
+                                    tint = ZigzagStrong,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "직접",
+                                    style = TextStyle(
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = ZigzagStrong,
+                                        platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 1.5 Apple Style Minimalist Wardrobe 3-Metric Summary Card
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("wardrobe_metrics_summary_card"),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFFF5F5F7),
+                    border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.05f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 9.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Metric 1: 총 내 옷장
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "내 옷장",
+                                style = TextStyle(
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = Color(0xFF86868B),
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "총 ${garments.size}벌",
+                                style = TextStyle(
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ZigzagStrong,
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "나만의 컬렉션",
+                                style = TextStyle(
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = Color(0xFF86868B),
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+
+                        // Divider 1
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(34.dp)
+                                .background(Color.Black.copy(alpha = 0.08f))
+                        )
+
+                        // Metric 2: 가능한 코디 조합 수
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "코디 조합",
+                                style = TextStyle(
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = Color(0xFF86868B),
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${capsuleReport.possibleOutfitsCount}가지",
+                                style = TextStyle(
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0071E3),
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "무한 스타일링",
+                                style = TextStyle(
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = Color(0xFF86868B),
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+
+                        // Divider 2
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(34.dp)
+                                .background(Color.Black.copy(alpha = 0.08f))
+                        )
+
+                        // Metric 3: 스타일 활용도 & 캡슐 점수
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "스타일 활용도",
+                                style = TextStyle(
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = Color(0xFF86868B),
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${capsuleReport.capsuleEfficiencyScore}점",
+                                style = TextStyle(
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ZigzagStrong,
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "자주 입는 옷 ${frequentWearRate}%",
+                                style = TextStyle(
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = Color(0xFF86868B),
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 1.8 Personal Color & Capsule Wardrobe Quick Bar
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // 퍼스널 컬러 진단 버튼
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp)
+                            .clickable { showPersonalColorDialog = true }
+                            .testTag("btn_open_personal_color"),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(android.graphics.Color.parseColor(activeSeason.representativeHex)))
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${activeSeason.labelKo} 진단",
+                                style = TextStyle(
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = ZigzagStrong,
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+
+                    // 캡슐 옷장 결핍 리포트 버튼
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp)
+                            .clickable { showCapsuleReportSheet = true }
+                            .testTag("btn_open_capsule_report"),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF0071E3).copy(alpha = 0.08f),
+                        border = BorderStroke(1.dp, Color(0xFF0071E3).copy(alpha = 0.2f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "📊 캡슐 결핍(Gap) 리포트",
+                                style = TextStyle(
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0071E3),
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 2. Search & Smart Sort + Category Filter Chips
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("옷 이름이나 색깔로 찾아보세요") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("wardrobe_search_input")
+                    )
+
+                    // Apple Store Style Products Category Showcase Cards
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                    ) {
+                        val appleCategories = listOf(
+                            Triple("ALL", "전체", "OUTER"),
+                            Triple("OUTER", "아우터", "OUTER"),
+                            Triple("TOP", "상의", "TOP"),
+                            Triple("BOTTOM", "하의", "BOTTOM"),
+                            Triple("SHOES", "신발", "SHOES"),
+                            Triple("BAG", "잡화", "BAG")
+                        )
+                        appleCategories.forEach { (code, label, iconCategory) ->
+                            val selected = selectedCategoryFilter == code
+                            Surface(
+                                modifier = Modifier
+                                    .width(76.dp)
+                                    .height(86.dp)
+                                    .clickable {
+                                        selectedCategoryFilter = code
+                                        if (selectedGarmentIdsForLook.isEmpty()) {
+                                            onShowToast(if (code == "ALL") "전체 옷을 보여드려요" else "${label} 목록을 보여드려요")
+                                        }
+                                    }
+                                    .testTag("filter_chip_$code"),
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (selected) Color(0xFF0071E3).copy(alpha = 0.08f) else Color(0xFFF5F5F7),
+                                border = if (selected) BorderStroke(1.5.dp, Color(0xFF0071E3)) else BorderStroke(1.dp, Color.Black.copy(alpha = 0.04f))
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 4.dp, vertical = 6.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.SpaceBetween
                                 ) {
+                                    Box(
+                                        modifier = Modifier.size(42.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Canvas(modifier = Modifier.fillMaxSize()) {
+                                            drawGarmentSilhouette(
+                                                category = iconCategory,
+                                                subCategory = "기본",
+                                                baseColor = if (selected) Color(0xFF0071E3) else Color(0xFF3A3A3C),
+                                                pattern = "솔리드"
+                                            )
+                                        }
+                                    }
                                     Text(
-                                        text = "ZERO-EFFORT AI WARDROBE",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = ZigzagStrong
+                                        text = if (code == "ALL") "전체 (${garments.size})" else label,
+                                        style = TextStyle(
+                                            fontSize = 11.sp,
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (selected) Color(0xFF0071E3) else ZigzagStrong,
+                                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                        ),
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 }
                             }
-                            Text(
-                                text = "총 ${garments.size}벌 보유",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = ZigzagSecondary
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        Text(
-                            text = "영수증 연동 & AI 자동 누끼 옷장",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = ZigzagStrong
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "쇼핑몰 전자영수증을 붙여넣거나 옷 사진을 올리면 AI가 배경을 오려내고 계절·색상·TPO 태그와 가격을 자동 기록합니다.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = ZigzagSecondary
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Button(
-                                onClick = {
-                                    onResetAiState()
-                                    showReceiptSheet = true
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = ZigzagCtaBlack,
-                                    contentColor = ZigzagCtaText
-                                ),
-                                shape = RoundedCornerShape(24.dp), // ZIGZAG control: 24px
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(46.dp)
-                                    .testTag("open_receipt_parser_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
-                                    contentDescription = "영수증 자동등록",
-                                    modifier = Modifier.size(17.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("영수증 AI 연동", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-                            }
-
-                            OutlinedButton(
-                                onClick = {
-                                    onResetAiState()
-                                    showPhotoSheet = true
-                                },
-                                shape = RoundedCornerShape(24.dp), // ZIGZAG control: 24px
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = ZigzagPillText
-                                ),
-                                border = BorderStroke(1.dp, ZigzagForeground),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(46.dp)
-                                    .testTag("open_camera_cutout_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CameraAlt,
-                                    contentDescription = "AI 누끼 촬영",
-                                    modifier = Modifier.size(17.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("사진 AI 누끼", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        OutlinedButton(
-                            onClick = { showQuickAddSheet = true },
-                            shape = RoundedCornerShape(24.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = ZigzagSecondary
-                            ),
-                            border = BorderStroke(1.dp, ZigzagHairline),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
-                                .testTag("open_quick_add_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "5초 퀵 등록",
-                                modifier = Modifier.size(17.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("⚡ 에이클로젯 5초 초고속 수동 등록 (칩 선택)", style = MaterialTheme.typography.labelMedium)
                         }
                     }
-                }
-            }
-        }
 
-        // 2. Search & Smart Sort + Category Filter Chips
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("브랜드, 의류명, 색상(베이지·네이비), TPO(#출근) 검색...") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("wardrobe_search_input")
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                ) {
-                    val categories = listOf(
-                        "ALL" to "전체 (${garments.size})",
-                        "OUTER" to "아우터",
-                        "TOP" to "상의",
-                        "BOTTOM" to "하의",
-                        "SHOES" to "신발",
-                        "BAG" to "가방·잡화"
-                    )
-                    categories.forEach { (code, label) ->
-                        val selected = selectedCategoryFilter == code
-                        FilterChip(
-                            selected = selected,
-                            onClick = { selectedCategoryFilter = code },
-                            label = {
-                                Text(
-                                    text = label,
-                                    style = if (selected) com.example.ui.theme.ZigzagTabSelected else com.example.ui.theme.ZigzagMetadata,
-                                    color = if (selected) ZigzagCtaText else ZigzagSecondary
-                                )
-                            },
-                            shape = RoundedCornerShape(24.dp), // ZIGZAG pill
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = ZigzagStrong,
-                                selectedLabelColor = ZigzagCtaText,
-                                containerColor = ZigzagCanvas,
-                                labelColor = ZigzagSecondary
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = selected,
-                                borderColor = if (selected) ZigzagStrong else ZigzagHairline
-                            ),
-                            modifier = Modifier.testTag("filter_chip_$code")
-                        )
-                    }
-                }
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                ) {
-                    val sorts = listOf(
-                        "RECENT" to "최신 등록순",
-                        "BEST_CPW" to "가성비(CPW) 최고순",
-                        "SLEEPER_FIRST" to "미착용 방치템순",
-                        "MOST_WORN" to "착용 횟수 많은순"
-                    )
-                    sorts.forEach { (code, label) ->
-                        val selected = sortMode == code
-                        AssistChip(
-                            onClick = { sortMode = code },
-                            label = {
-                                Text(
-                                    text = label,
-                                    style = if (selected) com.example.ui.theme.ZigzagTabSelected.copy(fontSize = 13.sp) else com.example.ui.theme.ZigzagMetadata.copy(fontSize = 13.sp),
-                                    color = if (selected) ZigzagStrong else ZigzagMuted
-                                )
-                            },
-                            shape = RoundedCornerShape(24.dp),
-                            colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
-                                containerColor = if (selected) ZigzagAppBanner else ZigzagCanvas,
-                                labelColor = if (selected) ZigzagStrong else ZigzagMuted
-                            ),
-                            border = androidx.compose.material3.AssistChipDefaults.assistChipBorder(
-                                enabled = true,
-                                borderColor = if (selected) ZigzagForeground else ZigzagHairline
-                            ),
-                            modifier = Modifier.testTag("sort_chip_$code")
-                        )
-                    }
-                }
-            }
-        }
-
-        // 3. Empty state with 1-tap Curated Wardrobe Seeding
-        if (garmentsState is DataUiState.Loading) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(48.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = ZigzagStrong)
-                }
-            }
-        } else if (filteredGarments.isEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Card(
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = ZigzagCanvas
-                    ),
-                    border = BorderStroke(1.dp, ZigzagHairline),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(28.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .horizontalScroll(rememberScrollState())
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(ZigzagAppBanner),
-                            contentAlignment = Alignment.Center
-                        ) {
+                        val sorts = listOf(
+                            "RECENT" to "최신순",
+                            "BEST_CPW" to "많이 입은순",
+                            "SLEEPER_FIRST" to "안 입는 순"
+                        )
+                        sorts.forEach { (code, label) ->
+                            val selected = sortMode == code
+                            AssistChip(
+                                onClick = {
+                                    sortMode = code
+                                    if (selectedGarmentIdsForLook.isEmpty()) {
+                                        onShowToast("${label}으로 정렬했어요")
+                                    }
+                                },
+                                label = {
+                                    Text(
+                                        text = label,
+                                        style = if (selected) com.example.ui.theme.ZigzagTabSelected.copy(fontSize = 13.sp) else com.example.ui.theme.ZigzagMetadata.copy(fontSize = 13.sp),
+                                        color = if (selected) ZigzagStrong else ZigzagMuted
+                                    )
+                                },
+                                shape = RoundedCornerShape(24.dp),
+                                colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
+                                    containerColor = if (selected) ZigzagAppBanner else ZigzagCanvas,
+                                    labelColor = if (selected) ZigzagStrong else ZigzagMuted
+                                ),
+                                border = androidx.compose.material3.AssistChipDefaults.assistChipBorder(
+                                    enabled = true,
+                                    borderColor = if (selected) ZigzagForeground else ZigzagHairline
+                                ),
+                                modifier = Modifier.testTag("sort_chip_$code")
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 3. 의류 목록 카드 그리드
+            if (filteredGarments.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 imageVector = Icons.Default.Checkroom,
                                 contentDescription = null,
-                                tint = ZigzagStrong,
-                                modifier = Modifier.size(36.dp)
+                                tint = ZigzagMuted,
+                                modifier = Modifier.size(40.dp)
                             )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "내 디지털 옷장이 비어 있어요",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = ZigzagStrong
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "무신사·29CM·W컨셉 샘플 영수증을 AI로 연동하거나, 아래 버튼을 눌러 9벌의 스타터 캡슐 옷장을 1초 만에 채워보세요!",
-                            style = com.example.ui.theme.ZigzagBody,
-                            color = ZigzagSecondary,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = {
-                                onSeedStarterWardrobe()
-                                showFintechToast(context, "스타터 캡슐 옷장 9벌이 등록되었어요")
-                            },
-                            shape = RoundedCornerShape(24.dp), // ZIGZAG control: 24px
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = ZigzagCtaBlack,
-                                contentColor = ZigzagCtaText
-                            ),
-                            modifier = Modifier
-                                .height(48.dp)
-                                .testTag("seed_starter_wardrobe_button")
-                        ) {
-                            Text("스타터 스마트 옷장 9벌 자동 채우기", style = com.example.ui.theme.ZigzagBuyCta.copy(fontSize = 15.sp))
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "조건에 맞는 옷이 없어요",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = ZigzagStrong
+                            )
                         }
                     }
                 }
+            } else {
+                items(filteredGarments, key = { it.stableKey }) { garment ->
+                    val itemKey = garment.stableKey
+                    val isSelected = selectedGarmentIdsForLook.contains(itemKey)
+                    GarmentWardrobeCard(
+                        garment = garment,
+                        itemKey = itemKey,
+                        personalColorSeason = activeSeason,
+                        cutoutBitmap = cutoutBitmaps[garment.id] ?: cutoutBitmaps[itemKey],
+                        isSelected = isSelected,
+                        hasActiveSelection = selectedGarmentIdsForLook.isNotEmpty(),
+                        onToggleSelect = {
+                            selectedGarmentIdsForLook = if (isSelected) {
+                                selectedGarmentIdsForLook - itemKey
+                            } else {
+                                selectedGarmentIdsForLook + itemKey
+                            }
+                        },
+                        onIncrementWear = {
+                            onIncrementWear(garment)
+                            onShowToast("'${garment.name}' 착용 1회가 기록되었어요")
+                        },
+                        onDelete = { pendingDeleteGarment = garment },
+                        onOpenFitting = { detailModalGarment = garment }
+                    )
+                }
             }
-        } else {
-            items(filteredGarments, key = { it.id.ifBlank { it.name + it.brand } }) { garment ->
-                GarmentWardrobeCard(
-                    garment = garment,
-                    cutoutBitmap = cutoutBitmaps[garment.id],
-                    onIncrementWear = {
-                        onIncrementWear(garment)
-                        showFintechToast(context, "'${garment.name}' 착용 1회가 기록되었어요")
-                    },
-                    onDelete = { pendingDeleteGarment = garment },
-                    onOpenFitting = { detailModalGarment = garment }
+        }
+
+        // 4. 멀티 탭 코디 메이커: 플로팅 룩 조합 바
+        FloatingLookCombinerBar(
+            selectedGarments = selectedGarmentsForLook,
+            cutoutBitmaps = cutoutBitmaps,
+            activeSeason = activeSeason,
+            onClearSelection = { selectedGarmentIdsForLook = emptySet() },
+            onFitLook = {
+                onShowToast("${selectedGarmentsForLook.size}벌 조합으로 아바타 피팅을 시작해요")
+                onOpenVirtualFittingWithLook(selectedGarmentsForLook)
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 16.dp, vertical = 16.dp)
+        )
+    }
+
+    // Modal Bottom Sheet 1: Electronic Receipt
+    if (showReceiptSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        var receiptInput by remember {
+            mutableStateOf(CuratedWardrobePresets.sampleReceiptTemplates.first().rawReceiptText)
+        }
+
+        ModalBottomSheet(
+            onDismissRequest = { showReceiptSheet = false },
+            sheetState = sheetState,
+            dragHandle = { ZigzagBottomSheetDragHandle() },
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            containerColor = ZigzagCanvas
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+            ) {
+                Text(
+                    text = "전자영수증 · 쇼핑몰 내역 AI 자동 등록",
+                    style = MaterialTheme.typography.titleLarge
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "결제 완료 문자나 이메일 영수증을 선택하거나 붙여넣으면 Gemini AI가 브랜드·가격·색상·카테고리·TPO 태그를 추출해 옷장에 등록합니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = {
+                        onParseReceipt(receiptInput)
+                        showReceiptSheet = false
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) {
+                    Text("영수증 분석 및 등록하기")
+                }
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
+
+    // Modal Bottom Sheet 2: AI Photo Cutout with RMBG-2.0 / ML Kit
+    if (showPhotoSheet) {
+        GarmentPhotoCutoutSheet(
+            onDismissRequest = { showPhotoSheet = false },
+            onGarmentCreated = { garment, bmp ->
+                onPhotoCutoutRegistered(garment, bmp)
+                onShowToast("'${garment.name}'이(가) 옷장에 깔끔하게 등록되었어요")
+            }
+        )
+    }
+
+    // Modal Dialog: Personal Color Diagnosis
+    if (showPersonalColorDialog) {
+        PersonalColorDiagnosisDialog(
+            currentToneCode = userProfile.personalColorTone,
+            onDismissRequest = { showPersonalColorDialog = false },
+            onToneSelected = { season ->
+                onSavePersonalColorTone(season)
+                onShowToast("퍼스널 컬러가 '${season.labelKo}'(으)로 적용되었어요")
+            }
+        )
+    }
+
+    // Modal Bottom Sheet 3: Capsule Wardrobe Gap Report
+    if (showCapsuleReportSheet) {
+        CapsuleWardrobeReportSheet(
+            garments = garments,
+            onDismissRequest = { showCapsuleReportSheet = false },
+            onShowToast = onShowToast
+        )
     }
 
     pendingDeleteGarment?.let { garmentToDelete ->
         FriendlyReassuranceDialog(
             title = "이 옷을 옷장에서 보낼까요?",
-            reassuranceText = "'${garmentToDelete.brand} ${garmentToDelete.name}'을(를) 삭제해도 지금까지의 착용 기록(${garmentToDelete.wearCount}회)과 가성비 리포트는 보존돼요. 언제든 다시 등록하실 수 있어요.",
+            reassuranceText = "'${garmentToDelete.brand} ${garmentToDelete.name}'을(를) 삭제해도 지금까지의 착용 기록(${garmentToDelete.wearCount}회)과 가성비 리포트는 보존돼요.",
             primaryButtonText = "옷장에 그대로 두기",
             onPrimaryClick = { pendingDeleteGarment = null },
             secondaryButtonText = "삭제하기",
             onSecondaryClick = {
                 onDeleteGarment(garmentToDelete.id)
                 pendingDeleteGarment = null
-                showFintechToast(context, "옷장에서 깔끔하게 정리되었어요")
+                onShowToast("옷장에서 깔끔하게 정리되었어요")
             },
             onDismissRequest = { pendingDeleteGarment = null },
             accentBadgeText = "안심 안내"
@@ -565,320 +865,47 @@ fun WardrobeScreen(
             onWearPlusOne = onIncrementWear
         )
     }
-
-    // Modal Bottom Sheet 1: Electronic Receipt / Shopping Mall Auto-Registration
-    if (showReceiptSheet) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        var receiptInput by remember {
-            mutableStateOf(CuratedWardrobePresets.sampleReceiptTemplates.first().rawReceiptText)
-        }
-
-        ModalBottomSheet(
-            onDismissRequest = { showReceiptSheet = false },
-            sheetState = sheetState,
-            dragHandle = { ZigzagBottomSheetDragHandle() },
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-            containerColor = ZigzagCanvas,
-            tonalElevation = 0.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-            ) {
-                Text(
-                    text = "전자영수증 · 쇼핑몰 내역 AI 자동 등록",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "결제 완료 문자나 이메일 영수증을 선택하거나 붙여넣으면 Gemini AI가 브랜드·가격·색상·카테고리·TPO 태그를 추출해 옷장에 등록합니다.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                ReassuranceNoticeCard(
-                    heading = "결제 및 개인정보는 안전하게 보호돼요",
-                    body = "카드 번호, 승인 번호, 배송지 주소는 즉시 걸러내고 오직 '의류 이름과 가격'만 추출해 옷장에 등록합니다."
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-                Text(
-                    text = "원클릭 쇼핑몰 영수증 템플릿",
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    CuratedWardrobePresets.sampleReceiptTemplates.forEach { tpl ->
-                        AssistChip(
-                            onClick = { receiptInput = tpl.rawReceiptText },
-                            label = { Text("${tpl.storeName} · ${tpl.title}") }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = receiptInput,
-                    onValueChange = { receiptInput = it },
-                    label = { Text("전자영수증 / 쇼핑몰 주문 텍스트") },
-                    minLines = 5,
-                    maxLines = 8,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("receipt_text_input")
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                AiRegistrationFeedbackSection(aiRegistrationState = aiRegistrationState)
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = { onParseReceipt(receiptInput) },
-                    enabled = aiRegistrationState !is AiTaskState.Loading && receiptInput.isNotBlank(),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .testTag("submit_receipt_ai_button")
-                ) {
-                    Text("AI로 영수증 파싱 & 옷장에 자동 등록")
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
-    }
-
-    // Modal Bottom Sheet 2: Camera / Photo Picker AI Background Cutout (누끼) & Auto-Tagging
-    if (showPhotoSheet) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        var enteredBrand by remember { mutableStateOf("무신사 스탠다드") }
-        var enteredPriceText by remember { mutableStateOf("89000") }
-
-        ModalBottomSheet(
-            onDismissRequest = { showPhotoSheet = false },
-            sheetState = sheetState,
-            dragHandle = { ZigzagBottomSheetDragHandle() },
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-            containerColor = ZigzagCanvas,
-            tonalElevation = 0.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-            ) {
-                Text(
-                    text = "AI 배경 제거(누끼) & 비전 메타데이터 태깅",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "의류 사진을 촬영하거나 앨범에서 선택하면 외곽 배경을 자동으로 투명하게 오려내고(누끼) 색상·패턴·TPO 태그를 추출합니다.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                ReassuranceNoticeCard(
-                    heading = "사진 속 배경과 얼굴 정보는 즉시 삭제돼요",
-                    body = "기기에서 AI가 옷 부분만 깔끔하게 분리(누끼)한 후 원본 사진은 보관하지 않으니 안심하세요."
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.PhotoLibrary, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("갤러리 선택")
-                    }
-                    OutlinedButton(
-                        onClick = { cameraPreviewLauncher.launch(null) },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.CameraAlt, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("카메라 촬영")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
-                        value = enteredBrand,
-                        onValueChange = { enteredBrand = it },
-                        label = { Text("브랜드명") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    OutlinedTextField(
-                        value = enteredPriceText,
-                        onValueChange = { enteredPriceText = it.filter { ch -> ch.isDigit() } },
-                        label = { Text("구매 가격(원)") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                AiRegistrationFeedbackSection(aiRegistrationState = aiRegistrationState)
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = {
-                        val bmp = selectedBitmap ?: createSampleStudioGarmentBitmap()
-                        val price = enteredPriceText.toLongOrNull() ?: 89000L
-                        onProcessPhoto(bmp, price, enteredBrand)
-                    },
-                    enabled = aiRegistrationState !is AiTaskState.Loading,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .testTag("run_photo_ai_cutout_button")
-                ) {
-                    Text(
-                        if (selectedBitmap != null) "선택한 사진 AI 누끼 제거 & 옷장 등록"
-                        else "스튜디오 샘플 의류 이미지로 AI 누끼 & 태깅 실행"
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun AiRegistrationFeedbackSection(
-    aiRegistrationState: AiTaskState<List<Garment>>
-) {
-    AnimatedVisibility(visible = aiRegistrationState !is AiTaskState.Idle) {
-        when (aiRegistrationState) {
-            is AiTaskState.Loading -> {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.5.dp)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = aiRegistrationState.stepMessage,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-            }
-
-            is AiTaskState.Success -> {
-                Surface(
-                    color = AtelierSage.copy(alpha = 0.16f),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = AtelierSage
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "AI 자동 추출 및 등록 완료 (${aiRegistrationState.result.size}벌)",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = AtelierSage
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        aiRegistrationState.result.forEach { item ->
-                            Text(
-                                text = "• [${item.brand}] ${item.name} (${item.colorName} · ${item.subCategory} · ${item.purchasePrice.toFormattedKrw()})",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                }
-            }
-
-            is AiTaskState.Error -> {
-                Surface(
-                    color = AtelierCoral.copy(alpha = 0.16f),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = aiRegistrationState.message,
-                        color = AtelierCoral,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(14.dp)
-                    )
-                }
-            }
-
-            AiTaskState.Idle -> {}
-        }
-    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun GarmentWardrobeCard(
     garment: Garment,
+    itemKey: String = garment.stableKey,
+    personalColorSeason: PersonalColorSeason,
     cutoutBitmap: Bitmap?,
+    isSelected: Boolean = false,
+    hasActiveSelection: Boolean = false,
+    onToggleSelect: () -> Unit = {},
     onIncrementWear: () -> Unit,
     onDelete: () -> Unit,
     onOpenFitting: () -> Unit
 ) {
-    // ZIGZAG Product-card specification: 0px rounded, 0px 0px 8px padding, flat elevation, #ecedee thumbnail
     Card(
-        shape = RoundedCornerShape(0.dp), // ZIGZAG square: 0px
-        colors = CardDefaults.cardColors(containerColor = ZigzagCanvas),
-        border = BorderStroke(1.dp, ZigzagHairline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp), // ZIGZAG: shadow none
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) Color(0xFFF0F7FF) else Color.White
+        ),
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) Color(0xFF0071E3) else Color(0xFFF1F5F9)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onOpenFitting() }
-            .testTag("garment_card_${garment.id}")
+            .clickable {
+                if (hasActiveSelection) onToggleSelect() else onOpenFitting()
+            }
+            .testTag("garment_card_${itemKey}")
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
-            // Cutout studio box (ZIGZAG product-thumbnail: #ECEDEE, 0px radius)
+            // Cutout studio box (에디토리얼 비주얼 박스 - 160dp)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(140.dp)
-                    .clip(RoundedCornerShape(0.dp))
-                    .background(ZigzagHairline)
+                    .height(160.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF8FAFC))
             ) {
                 GarmentCutoutIllustration(
                     garment = garment,
@@ -886,46 +913,58 @@ private fun GarmentWardrobeCard(
                     showCheckerboard = false,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(10.dp)
+                        .padding(8.dp)
                 )
 
                 // Source badge
                 Surface(
-                    color = ZigzagStrong,
-                    shape = RoundedCornerShape(4.dp),
+                    color = Color.Black.copy(alpha = 0.70f),
+                    shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(6.dp)
+                        .padding(8.dp)
                 ) {
                     Text(
-                        text = if (garment.sourceType == "CAMERA_AI") "AI 누끼" else "영수증",
+                        text = if (garment.sourceType == "CAMERA_AI" || garment.sourceType == "PHOTO_CUTOUT") "사진" else "영수증",
                         style = TextStyle(
-                            fontSize = 10.sp,
+                            fontSize = 9.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = ZigzagCtaText,
+                            color = Color.White,
                             platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
                         ),
                         maxLines = 1,
                         softWrap = false,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.5.dp)
                     )
                 }
 
-                if (garment.waterResistant) {
-                    Surface(
-                        color = ZigzagStrong,
-                        shape = CircleShape,
+                // Selection Check Circle (멀티 탭 코디 메이커 토글 - 36dp 터치 타깃)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .clickable { onToggleSelect() }
+                        .testTag("select_toggle_${itemKey}"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
                         modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(6.dp)
-                            .size(22.dp)
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(if (isSelected) Color(0xFF0071E3) else Color.Black.copy(alpha = 0.22f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.WaterDrop,
-                                contentDescription = "방수/발수",
-                                tint = Color.White,
-                                modifier = Modifier.size(12.dp)
+                        if (isSelected) {
+                            Text(
+                                text = "✓",
+                                style = TextStyle(
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                )
                             )
                         }
                     }
@@ -937,25 +976,25 @@ private fun GarmentWardrobeCard(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .padding(6.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(ZigzagCanvas.copy(alpha = 0.92f))
-                        .border(0.5.dp, ZigzagHairline, RoundedCornerShape(24.dp))
-                        .padding(horizontal = 7.dp, vertical = 3.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White.copy(alpha = 0.95f))
+                        .border(0.5.dp, Color(0xFFE2E8F0), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.5.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(7.dp)
                             .clip(CircleShape)
                             .background(parseHexColorSafe(garment.colorHex))
-                            .border(0.5.dp, ZigzagHairline, CircleShape)
+                            .border(0.5.dp, Color(0xFFCBD5E1), CircleShape)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = garment.colorName,
                         style = TextStyle(
-                            fontSize = 10.sp,
+                            fontSize = 9.5.sp,
                             fontWeight = FontWeight.Medium,
-                            color = ZigzagStrong,
+                            color = Color(0xFF334155),
                             platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
                         ),
                         maxLines = 1,
@@ -966,27 +1005,59 @@ private fun GarmentWardrobeCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // ZIGZAG Product metadata & body text
             Text(
                 text = garment.brand,
-                style = com.example.ui.theme.ZigzagMetadata.copy(fontSize = 12.sp, color = ZigzagMuted),
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF94A3B8),
+                    letterSpacing = 0.3.sp,
+                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = garment.name,
-                style = com.example.ui.theme.ZigzagBody.copy(fontSize = 15.sp, fontWeight = FontWeight.Normal),
+                style = TextStyle(
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF0F172A),
+                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                garment.tpoTags.take(2).forEach { tag ->
+                // 퍼스널 컬러 매칭 뱃지 (koreai / rizz-up 알고리즘)
+                val colorMatch = PersonalColorAnalyzer.evaluateGarmentColorMatch(garment.colorHex, personalColorSeason)
+                Surface(
+                    color = if (colorMatch.isRecommended) Color(0xFF0071E3).copy(alpha = 0.08f) else Color(0xFFF1F5F9),
+                    shape = RoundedCornerShape(4.dp),
+                    border = BorderStroke(0.5.dp, if (colorMatch.isRecommended) Color(0xFF0071E3).copy(alpha = 0.3f) else Color(0xFFE2E8F0))
+                ) {
+                    Text(
+                        text = colorMatch.badgeLabel,
+                        style = TextStyle(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (colorMatch.isRecommended) Color(0xFF0071E3) else Color(0xFF475569),
+                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                        ),
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
+                }
+
+                garment.tpoTags.take(1).forEach { tag ->
                     Surface(
                         color = Color(0xFFF1F5F9),
                         shape = RoundedCornerShape(4.dp),
@@ -1006,83 +1077,229 @@ private fun GarmentWardrobeCard(
                         )
                     }
                 }
+
+                // 착용 횟수 뱃지 (패션 라이프스타일 지표)
+                Surface(
+                    color = Color(0xFFF8FAFC),
+                    shape = RoundedCornerShape(4.dp),
+                    border = BorderStroke(0.5.dp, Color(0xFFE2E8F0))
+                ) {
+                    Text(
+                        text = "${garment.wearCount}회 착용",
+                        style = TextStyle(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF475569),
+                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                        ),
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // CPW & Wear Count Row
+            // Action Row: Wear +1 Action & Delete Control (No financial numbers)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = "1회 착용비용",
-                        style = com.example.ui.theme.ZigzagMetadata.copy(fontSize = 11.sp, color = ZigzagMuted)
-                    )
-                    Text(
-                        text = garment.costPerWear.toFormattedKrw(),
-                        style = TextStyle(
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ZigzagStrong,
-                            fontFeatureSettings = "tnum",
-                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
-                        )
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = ZigzagStrong,
-                        modifier = Modifier
-                            .clickable { onIncrementWear() }
-                            .testTag("wear_plus_button_${garment.id}")
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFF0F172A),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(34.dp)
+                        .clickable { onIncrementWear() }
+                        .testTag("wear_plus_button_${itemKey}")
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "입음 +1 (${garment.wearCount}회)",
+                            text = "오늘 입었어요 +1",
                             style = TextStyle(
-                                fontSize = 11.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = ZigzagCtaText,
-                                fontFeatureSettings = "tnum",
+                                color = Color.White,
                                 platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
                             ),
                             maxLines = 1,
-                            softWrap = false,
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+                            softWrap = false
                         )
                     }
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = "의류 삭제",
-                            tint = ZigzagSecondary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = "의류 삭제",
+                        tint = Color(0xFF94A3B8),
+                        modifier = Modifier.size(17.dp)
+                    )
                 }
             }
         }
     }
 }
 
-private fun createSampleStudioGarmentBitmap(): Bitmap {
-    val bmp = Bitmap.createBitmap(240, 240, Bitmap.Config.ARGB_8888)
-    val canvas = android.graphics.Canvas(bmp)
-    val bgPaint = android.graphics.Paint().apply {
-        color = android.graphics.Color.rgb(245, 245, 242)
+/**
+ * 선택한 의류 조합의 카테고리 다양성 및 퍼스널컬러 어울림 수를 바탕으로 시너지 점수(88~99점)를 산출합니다.
+ */
+private fun calculateLookSynergyScore(
+    selectedGarments: List<Garment>,
+    activeSeason: PersonalColorSeason
+): Int {
+    val distinctCategories = selectedGarments.map { it.category }.distinct().size
+    val colorMatchCount = selectedGarments.count {
+        PersonalColorAnalyzer.evaluateGarmentColorMatch(it.colorHex, activeSeason).isRecommended
     }
-    canvas.drawRect(0f, 0f, 240f, 240f, bgPaint)
+    return (88 + (distinctCategories * 3) + (colorMatchCount * 2)).coerceIn(88, 99)
+}
 
-    val coatPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.rgb(52, 73, 94)
+/**
+ * 멀티 탭 코디 메이커 하단 플로팅 바: 선택된 의류 썸네일 스택, 코디 시너지 점수,
+ * 선택 초기화 및 가상 피팅실(3D 아바타) 바로 입어보기 CTA를 제공합니다.
+ */
+@Composable
+private fun FloatingLookCombinerBar(
+    selectedGarments: List<Garment>,
+    cutoutBitmaps: Map<String, Bitmap>,
+    activeSeason: PersonalColorSeason,
+    onClearSelection: () -> Unit,
+    onFitLook: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = selectedGarments.isNotEmpty(),
+        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+        modifier = modifier
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color(0xFF0F172A),
+            shadowElevation = 10.dp,
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("floating_look_combiner_bar")
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+                        for (garment in selectedGarments.take(3)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White)
+                                    .border(1.5.dp, Color(0xFF0071E3), CircleShape)
+                                    .padding(3.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                GarmentCutoutIllustration(
+                                    garment = garment,
+                                    cutoutBitmap = cutoutBitmaps[garment.id] ?: cutoutBitmaps[garment.stableKey],
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                    }
+
+                    val synergyScore = calculateLookSynergyScore(selectedGarments, activeSeason)
+
+                    Column {
+                        Text(
+                            text = "${selectedGarments.size}벌 코디 조합",
+                            style = TextStyle(
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                            ),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (selectedGarments.size >= 2) {
+                                "✨ 찰떡 스타일링 ${synergyScore}점"
+                            } else {
+                                "하의/아우터를 더 선택해보세요"
+                            },
+                            style = TextStyle(
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = Color(0xFF94A3B8),
+                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                            ),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    IconButton(
+                        onClick = onClearSelection,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .testTag("btn_clear_selected_look")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "선택 취소",
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    Button(
+                        onClick = onFitLook,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF0071E3),
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .height(36.dp)
+                            .testTag("btn_fit_selected_look")
+                    ) {
+                        Text(
+                            text = "입어보기 >",
+                            style = TextStyle(
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                            ),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+                }
+            }
+        }
     }
-    canvas.drawRoundRect(55f, 40f, 185f, 200f, 24f, 24f, coatPaint)
-    return bmp
 }

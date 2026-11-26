@@ -67,6 +67,9 @@ import org.json.JSONObject
  *   cool HemisphereLight fill, FogExp2 matching studio horizon, procedural CanvasTexture fabric weave bump/roughness maps)
  * - Damped 60fps Camera Loop (exponential damping `1 - Math.exp(-k * dt)`, pre-allocated scratch Vector3 objects)
  * - Compact Collapsible Floating Control Dock (<= 15% viewport footprint)
+ *
+ * Benchmark Reference:
+ * - 4D-Humans Parametric Proportions: https://github.com/shubham-goel/4D-Humans
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable

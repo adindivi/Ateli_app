@@ -57,6 +57,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.data.model.Garment
 import com.example.data.model.UserProfile
 import com.example.data.remote.WeatherContext
@@ -289,8 +290,9 @@ fun EnterpriseProCommandBar(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = if (isProDarkMode) Color(0xFF0B0E14) else MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = if (isProDarkMode) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+        color = if (isProDarkMode) Color(0xFF0B0E14) else Color(0xFFF8FAFC),
+        contentColor = if (isProDarkMode) Color.White else Color(0xFF334155),
+        border = BorderStroke(1.dp, if (isProDarkMode) Color(0xFF1E293B) else Color(0xFFE2E8F0)),
         modifier = modifier
             .fillMaxWidth()
             .testTag("enterprise_pro_command_bar")
@@ -298,7 +300,7 @@ fun EnterpriseProCommandBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -310,13 +312,12 @@ fun EnterpriseProCommandBar(
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = if (isProEnterpriseMode) {
-                        MaterialTheme.colorScheme.primaryContainer
+                        if (isProDarkMode) Color(0xFF1E293B) else Color(0xFF0F172A)
                     } else if (isProDarkMode) {
-                        Color.White.copy(alpha = 0.15f)
+                        Color.White.copy(alpha = 0.10f)
                     } else {
-                        MaterialTheme.colorScheme.surface
+                        Color(0xFFE2E8F0)
                     },
-                    border = if (!isProDarkMode) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null,
                     modifier = Modifier
                         .clickable { onToggleEnterpriseMode() }
                         .testTag("toggle_b2b_pro_mode_badge")
@@ -330,44 +331,47 @@ fun EnterpriseProCommandBar(
                             imageVector = Icons.Default.VerifiedUser,
                             contentDescription = null,
                             tint = if (isProEnterpriseMode) {
-                                MaterialTheme.colorScheme.primary
+                                Color.White
                             } else if (isProDarkMode) {
-                                AtelierChampagne
+                                Color(0xFF94A3B8)
                             } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                                Color(0xFF475569)
                             },
                             modifier = Modifier.size(13.dp)
                         )
                         Text(
-                            text = if (isProEnterpriseMode) "B2B PRO SUITE ON" else "STANDARD MODE",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = if (isProEnterpriseMode) {
-                                MaterialTheme.colorScheme.primary
-                            } else if (isProDarkMode) {
-                                AtelierChampagne
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
+                            text = if (isProEnterpriseMode) "프로 모드" else "기본 모드",
+                            style = androidx.compose.ui.text.TextStyle(
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isProEnterpriseMode) Color.White else if (isProDarkMode) Color(0xFF94A3B8) else Color(0xFF475569),
+                                platformStyle = @Suppress("DEPRECATION") androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
+                            ),
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
 
                 Text(
-                    text = "SKU:${String.format("%02d", skuCount)} · SLA 99.9% · $weatherSummary",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = if (isProDarkMode) Color.White.copy(alpha = 0.82f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = "옷 ${String.format("%02d", skuCount)}벌 · $weatherSummary",
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = if (isProDarkMode) Color.White.copy(alpha = 0.85f) else Color(0xFF475569),
+                        platformStyle = @Suppress("DEPRECATION") androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
+                    ),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
             }
 
             Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = if (isProDarkMode) Color.White.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
-                border = if (!isProDarkMode) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null,
+                shape = RoundedCornerShape(6.dp),
+                color = if (isProDarkMode) Color.White.copy(alpha = 0.12f) else Color.White,
+                border = BorderStroke(1.dp, if (isProDarkMode) Color(0xFF334155) else Color(0xFFCBD5E1)),
                 modifier = Modifier
                     .clickable { onToggleDarkMode() }
                     .testTag("toggle_darkroom_theme_button")
@@ -380,15 +384,20 @@ fun EnterpriseProCommandBar(
                     Icon(
                         imageVector = if (isProDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
                         contentDescription = "다크룸 테마 전환",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(14.dp)
+                        tint = if (isProDarkMode) Color(0xFFF1F5F9) else Color(0xFF0F172A),
+                        modifier = Modifier.size(13.dp)
                     )
                     Text(
-                        text = if (isProDarkMode) "DAYLIGHT" else "DARKROOM",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        text = if (isProDarkMode) "낮" else "밤",
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontSize = 10.5.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isProDarkMode) Color(0xFFF1F5F9) else Color(0xFF0F172A),
+                            platformStyle = @Suppress("DEPRECATION") androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
+                        ),
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -817,12 +826,12 @@ fun B2BInventoryAuditAndEsgCard(
                     )
                     Column {
                         Text(
-                            text = "🏢 [B2B ERP 감사] 의류 자산 회전율 · ESG 탄소절감 & CSV 익스포터",
+                            text = "🌱 내 옷장 알뜰 성적표",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.ExtraBold
                         )
                         Text(
-                            text = "등급: ${audit.esgGrade}",
+                            text = "알뜰 등급 ${audit.esgGrade}",
                             style = MaterialTheme.typography.labelSmall,
                             fontFamily = FontFamily.Monospace,
                             color = AtelierSage,
@@ -833,7 +842,7 @@ fun B2BInventoryAuditAndEsgCard(
                 FilterChip(
                     selected = showSkuTable,
                     onClick = { showSkuTable = !showSkuTable },
-                    label = { Text(if (showSkuTable) "요약 보기" else "SKU 원장") },
+                    label = { Text(if (showSkuTable) "간단히 보기" else "자세히 보기") },
                     modifier = Modifier.testTag("toggle_sku_ledger_chip")
                 )
             }
@@ -844,19 +853,19 @@ fun B2BInventoryAuditAndEsgCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 AuditMetricTile(
-                    title = "재고 가동률",
+                    title = "자주 입는 옷",
                     value = "${audit.activeUtilizationRatePercent}%",
-                    sub = "총 ${audit.totalSkuCount} SKU",
+                    sub = "총 ${audit.totalSkuCount}벌",
                     modifier = Modifier.weight(1f)
                 )
                 AuditMetricTile(
-                    title = "순자산가치(NAV)",
+                    title = "지금 중고 시세",
                     value = "₩${String.format("%,d", audit.estimatedNetAssetValueKrw / 1000)}K",
-                    sub = "감가상각 반영",
+                    sub = "추정 가치",
                     modifier = Modifier.weight(1f)
                 )
                 AuditMetricTile(
-                    title = "탄소 절감(ESG)",
+                    title = "아낀 탄소",
                     value = "-${audit.carbonSavedKgCo2e}kg",
                     sub = "물 ${audit.waterSavedLiters}L 절약",
                     modifier = Modifier.weight(1f)
@@ -919,7 +928,7 @@ fun B2BInventoryAuditAndEsgCard(
                         .weight(1f)
                         .testTag("export_b2b_csv_button")
                 ) {
-                    Text("ERP 호환 CSV 내보내기", style = MaterialTheme.typography.labelMedium)
+                    Text("엑셀로 복사", style = MaterialTheme.typography.labelMedium)
                 }
 
                 OutlinedButton(
@@ -938,7 +947,7 @@ fun B2BInventoryAuditAndEsgCard(
                 ) {
                     Icon(Icons.Default.Eco, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("ESG 감사 리포트 공유", style = MaterialTheme.typography.labelMedium)
+                    Text("친구에게 공유", style = MaterialTheme.typography.labelMedium)
                 }
             }
         }

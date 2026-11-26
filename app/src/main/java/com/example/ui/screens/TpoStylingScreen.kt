@@ -98,6 +98,7 @@ import com.example.ui.theme.ZigzagHairline
 import com.example.ui.theme.ZigzagStrong
 import com.example.ui.theme.ZigzagSecondary
 import com.example.ui.theme.ZigzagCtaText
+import com.example.ui.theme.ZigzagCtaBlack
 import com.example.util.LocationUtils
 import com.example.util.toFormattedGps
 import com.example.viewmodel.AiRecommendedCoordi
@@ -120,7 +121,8 @@ fun TpoStylingScreen(
     onGenerateRecommendation: (String, String, List<Garment>, UserProfile) -> Unit,
     onSaveRecommendedOutfit: (AiRecommendedCoordi) -> Unit,
     onIncrementWear: (Garment) -> Unit,
-    onDeleteSavedOutfit: (String) -> Unit
+    onDeleteSavedOutfit: (String) -> Unit,
+    onShowToast: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -192,61 +194,71 @@ fun TpoStylingScreen(
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 840.dp)
+                .widthIn(max = 680.dp)
                 .fillMaxHeight()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
                 .testTag("tpo_styling_screen")
         ) {
-        // 1. Live Current Location & Open-Meteo Weather Card (ZIGZAG 8px Card, 1px Hairline)
+        // 1. Apple-Style Slim Minimal Weather Capsule Card (Zero-Scroll Optimized)
         Card(
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = ZigzagCanvas),
             border = BorderStroke(1.dp, ZigzagHairline),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp)
-            ) {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Icon(
-                                imageVector = if (weather.isRainyOrSnowy) Icons.Default.Umbrella else Icons.Default.WbSunny,
-                                contentDescription = "날씨 아이콘",
-                                tint = ZigzagStrong,
-                                modifier = Modifier.size(28.dp)
+            Column(modifier = Modifier.padding(14.dp)) {
+                // Row 1: Weather Headline & Temperature & Refresh
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (weather.isRainyOrSnowy) Icons.Default.Umbrella else Icons.Default.WbSunny,
+                            contentDescription = "날씨 아이콘",
+                            tint = ZigzagStrong,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (weather.isCurrentGpsLocation) "지금 내 위치" else weather.cityLabelKo,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = ZigzagStrong
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "${weather.temperatureC.toInt()}°C · ${weather.conditionLabelKo}",
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ZigzagStrong,
+                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
                             )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = if (weather.isCurrentGpsLocation) {
-                                        "${weather.cityLabelKo} 실시간 GPS 기상 연동"
-                                    } else {
-                                        "${weather.cityLabelKo} 실시간 기상 연동"
-                                    },
-                                    style = com.example.ui.theme.ZigzagMetadata.copy(fontSize = 13.sp, color = ZigzagSecondary),
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    text = "${weather.temperatureC.toInt()}°C · ${weather.conditionLabelKo}",
-                                    style = TextStyle(
-                                        fontSize = 22.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = ZigzagStrong,
-                                        fontFeatureSettings = "tnum",
-                                        platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
-                                    )
-                                )
-                            }
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = Color(0xFFF1F5F9),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text(
+                                text = "체감 ${weather.apparentTempC.toInt()}° (최저 ${weather.minTempC.toInt()}°/최고 ${weather.maxTempC.toInt()}°)",
+                                style = TextStyle(
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = ZigzagSecondary,
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
                         }
+
+                        Spacer(modifier = Modifier.width(4.dp))
 
                         IconButton(
                             onClick = {
@@ -255,13 +267,16 @@ fun TpoStylingScreen(
                                 } else {
                                     onRefreshWeather(weather.cityId)
                                 }
+                                onShowToast("최신 날씨를 불러왔어요")
                             },
                             enabled = !isWeatherLoading,
-                            modifier = Modifier.testTag("refresh_weather_button")
+                            modifier = Modifier
+                                .size(34.dp)
+                                .testTag("refresh_weather_button")
                         ) {
                             if (isWeatherLoading) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(16.dp),
                                     color = MaterialTheme.colorScheme.primary,
                                     strokeWidth = 2.dp
                                 )
@@ -269,128 +284,81 @@ fun TpoStylingScreen(
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
                                     contentDescription = "날씨 새로고침",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = ZigzagSecondary,
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                    // Current GPS Location Weather Button + City Presets Row
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                    ) {
-                        Button(
-                            onClick = {
-                                val hasFine = ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.ACCESS_FINE_LOCATION
-                                ) == PackageManager.PERMISSION_GRANTED
-                                val hasCoarse = ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                ) == PackageManager.PERMISSION_GRANTED
+                // Row 2: 1-line Weather Strategy & Quick Location Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = weatherSuggestion.weatherStrategyHeadline,
+                        style = TextStyle(
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = ZigzagSecondary,
+                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
 
-                                if (hasFine || hasCoarse) {
-                                    fetchCurrentDeviceLocation()
-                                } else {
-                                    locationPermissionLauncher.launch(
-                                        arrayOf(
-                                            Manifest.permission.ACCESS_FINE_LOCATION,
-                                            Manifest.permission.ACCESS_COARSE_LOCATION
-                                        )
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Surface(
+                        color = if (weather.isCurrentGpsLocation) ZigzagStrong else Color(0xFFF1F5F9),
+                        shape = RoundedCornerShape(14.dp),
+                        onClick = {
+                            val hasFine = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.ACCESS_FINE_LOCATION
+                            ) == PackageManager.PERMISSION_GRANTED
+                            val hasCoarse = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            ) == PackageManager.PERMISSION_GRANTED
+                            if (hasFine || hasCoarse) {
+                                fetchCurrentDeviceLocation()
+                            } else {
+                                locationPermissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
                                     )
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AtelierChampagne,
-                                contentColor = AtelierMidnight
-                            ),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            shape = RoundedCornerShape(50),
-                            modifier = Modifier.testTag("current_gps_weather_button")
+                                )
+                            }
+                        },
+                        modifier = Modifier.testTag("current_gps_weather_button")
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.MyLocation,
-                                contentDescription = "현재 위치 날씨 조회",
-                                modifier = Modifier.size(16.dp)
+                                contentDescription = "현재 위치",
+                                tint = if (weather.isCurrentGpsLocation) Color.White else ZigzagSecondary,
+                                modifier = Modifier.size(12.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
                             Text(
-                                text = "내 현재 위치 날씨",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        WeatherRepository.supportedCities.forEach { city ->
-                            val isSelected = !weather.isCurrentGpsLocation &&
-                                weather.cityId.equals(city.id, ignoreCase = true)
-                            AssistChip(
-                                onClick = {
-                                    locationStatusHint = null
-                                    onRefreshWeather(city.id)
-                                },
-                                label = {
-                                    Text(
-                                        text = city.labelKo,
-                                        color = if (isSelected) AtelierChampagne else AtelierIvory.copy(alpha = 0.78f)
-                                    )
-                                },
-                                leadingIcon = if (isSelected) {
-                                    {
-                                        Icon(
-                                            imageVector = Icons.Default.LocationOn,
-                                            contentDescription = null,
-                                            tint = AtelierChampagne,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                    }
-                                } else null
-                            )
-                        }
-                    }
-
-                    if (locationStatusHint != null) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = locationStatusHint!!,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = AtelierChampagne
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = "체감 ${weather.apparentTempC.toInt()}°C (최저 ${weather.minTempC.toInt()}° / 최고 ${weather.maxTempC.toInt()}°, 일교차 ${weather.dailyTempRangeC.toInt()}°C) · 습도 ${weather.humidityPercent}% · 강수확률 ${weather.rainProbabilityPercent}% · 풍속 ${weather.windSpeedKmh.toInt()}km/h",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = AtelierIvory.copy(alpha = 0.85f)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Surface(
-                        color = Color.White.copy(alpha = 0.10f),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = "🌤️ ${weatherSuggestion.weatherStrategyHeadline}",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = AtelierChampagne,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = weatherSuggestion.weatherStrategyDetail,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = AtelierIvory.copy(alpha = 0.90f)
+                                text = "내 위치",
+                                style = TextStyle(
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (weather.isCurrentGpsLocation) Color.White else ZigzagSecondary,
+                                    platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
+                                )
                             )
                         }
                     }
@@ -422,7 +390,8 @@ fun TpoStylingScreen(
                     weatherMatchReason = weather.stylingAdviceKo
                 )
                 onSaveRecommendedOutfit(rec)
-            }
+            },
+            onShowToast = onShowToast
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -437,7 +406,7 @@ fun TpoStylingScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "오늘의 일정 (TPO) + AI 심층 코디 매칭",
+                    text = "오늘 어디 가시나요?",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = ZigzagStrong
@@ -486,7 +455,7 @@ fun TpoStylingScreen(
                 OutlinedTextField(
                     value = scheduleNote,
                     onValueChange = { scheduleNote = it },
-                    label = { Text("오늘 캘린더 일정 / 상황 메모") },
+                    label = { Text("어디 가는지 알려주세요 (예: 친구 약속, 출근)") },
                     singleLine = false,
                     maxLines = 2,
                     modifier = Modifier
@@ -511,7 +480,7 @@ fun TpoStylingScreen(
                         .height(52.dp)
                         .testTag("generate_tpo_coordi_button")
                 ) {
-                    Text("날씨 적합도 + 체형 + TPO 결합 AI 코디 추천받기")
+                    Text("옷 추천받기")
                 }
             }
         }
@@ -639,7 +608,8 @@ private fun WeatherWardrobeSuggestionCard(
     cutoutBitmaps: Map<String, Bitmap>,
     onSelectCategoryFilter: (String) -> Unit,
     onIncrementWear: (Garment) -> Unit,
-    onApplyBestWeatherOutfit: () -> Unit
+    onApplyBestWeatherOutfit: () -> Unit,
+    onShowToast: (String) -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(22.dp),
@@ -674,7 +644,7 @@ private fun WeatherWardrobeSuggestionCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "현재 날씨 맞춤 옷장 아이템 제안",
+                            text = "오늘 날씨에 딱 맞는 내 옷",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -710,13 +680,13 @@ private fun WeatherWardrobeSuggestionCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "✨ 오늘 날씨 카테고리별 1위 베스트 조합",
+                                text = "오늘 날씨 추천 코디",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = AtelierMidnight,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = if (weather.needsOuterLayer) "아우터 포함 레이어드" else "단독 단품 매칭",
+                                text = if (weather.needsOuterLayer) "겉옷 챙기기" else "가볍게 입기",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = AtelierSage,
                                 fontWeight = FontWeight.Bold
@@ -743,20 +713,20 @@ private fun WeatherWardrobeSuggestionCard(
                         Button(
                             onClick = {
                                 onApplyBestWeatherOutfit()
-                                showFintechToast(context, "오늘의 날씨 코디가 저장되고 착용이 기록되었어요")
+                                onShowToast("오늘의 날씨 코디를 착용으로 기록했어요")
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AtelierSage,
-                                contentColor = Color.White
+                                containerColor = ZigzagCtaBlack,
+                                contentColor = ZigzagCtaText
                             ),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(14.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(44.dp)
+                                .height(48.dp)
                                 .testTag("apply_best_weather_outfit_button")
                         ) {
                             Text(
-                                text = "오늘의 날씨 베스트 조합 바로 입기 (코디 저장 & 착용 +1)",
+                                text = "이대로 입을게요 (입음 +1)",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold
                             )

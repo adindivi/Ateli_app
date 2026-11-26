@@ -132,14 +132,14 @@ fun AnalyticsScreen(
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Text(
-                    text = "내 옷장 가성비 리포트",
+                    text = "내 옷장 통계",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = ZigzagStrong
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "CPW = (옷 초기 구매가) ÷ (총 착용 횟수). 입을수록 1회당 비용이 내려갑니다!",
+                    text = "자주 입을수록 돈 아끼는 거예요",
                     style = MaterialTheme.typography.bodySmall,
                     color = ZigzagSecondary
                 )
@@ -151,21 +151,21 @@ fun AnalyticsScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     MetricBox(
-                        label = "옷장 총 자산가치",
+                        label = "총 옷값",
                         value = totalWardrobeValue.toFormattedKrw(),
                         subLabel = "총 ${garments.size}벌",
                         modifier = Modifier.weight(1f)
                     )
                     MetricBox(
-                        label = "평균 1회 착용비용",
+                        label = "한 번 입을 때",
                         value = averageCpw.toFormattedKrw(),
-                        subLabel = "누적 ${totalWearCount}회 착용",
+                        subLabel = "${totalWearCount}번 입었어요",
                         modifier = Modifier.weight(1f)
                     )
                     MetricBox(
-                        label = "옷장 방치율",
+                        label = "안 입는 옷",
                         value = "${dormantRatePercent}%",
-                        subLabel = "미착용·1회 이하 ${unwornSleepers.size}벌",
+                        subLabel = "${unwornSleepers.size}벌 남음",
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -198,9 +198,9 @@ fun AnalyticsScreen(
             Spacer(modifier = Modifier.height(20.dp))
         }
 
-        // 2. Top 3 Most Worn & Best CPW Leaderboard ("가장 자주 입은 효자 아이템 Top 3")
+        // 2. Top 3 Most Worn & Best CPW Leaderboard ("가장 많이 입은 효자 옷 Top 3")
         Text(
-            text = "가장 자주 입은 효자 아이템 Top 3",
+            text = "가장 많이 입은 효자 옷 Top 3",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             color = ZigzagStrong
         )
@@ -522,17 +522,19 @@ private fun MetricBox(
         border = BorderStroke(1.dp, ZigzagHairline),
         modifier = modifier
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(10.dp)) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = ZigzagSecondary
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                color = ZigzagSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = value,
                 style = TextStyle(
-                    fontSize = 17.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = ZigzagStrong,
                     fontFeatureSettings = "tnum",
@@ -545,12 +547,12 @@ private fun MetricBox(
             Text(
                 text = subLabel,
                 style = TextStyle(
-                    fontSize = 11.sp,
+                    fontSize = 10.5.sp,
                     color = ZigzagMuted,
                     platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
                 ),
                 maxLines = 1,
-                softWrap = false
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -784,7 +786,7 @@ private fun SleeperResaleCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("당근마켓 판매글 복사", style = MaterialTheme.typography.labelSmall)
+                    Text("당근마켓 판매글 복사", style = MaterialTheme.typography.labelSmall, color = ZigzagCtaText)
                 }
 
                 OutlinedButton(

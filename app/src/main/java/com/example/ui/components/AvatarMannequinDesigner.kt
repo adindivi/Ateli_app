@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,8 +29,6 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,6 +37,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -81,6 +81,9 @@ import com.example.ui.theme.AtelierChampagne
 import com.example.ui.theme.AtelierIvory
 import com.example.ui.theme.AtelierMidnight
 import com.example.ui.theme.AtelierSage
+import com.example.ui.theme.ZigzagStrong
+import com.example.ui.theme.ZigzagHairline
+import com.example.ui.theme.ZigzagCtaBlack
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
@@ -195,9 +198,9 @@ data class AvatarBodyMetrics(
 }
 
 enum class MannequinPoseView(val labelKo: String) {
-    FRONT("정면 아나토미"),
-    THREE_QUARTER("45° 입체 핏"),
-    SIDE("측면 실루엣")
+    FRONT("앞"),
+    THREE_QUARTER("45°"),
+    SIDE("옆")
 }
 
 /**
@@ -213,24 +216,14 @@ fun AvatarMannequinDesignerCard(
     onSaveProfile: (UserProfile) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isFormExpanded by remember { mutableStateOf(true) }
-    var showMeasurementCalipers by remember { mutableStateOf(true) }
+    var isFormExpanded by remember { mutableStateOf(false) }
+    var showMeasurementCalipers by remember { mutableStateOf(false) }
     var poseView by remember { mutableStateOf(MannequinPoseView.FRONT) }
-    var autoDetectNotice by remember { mutableStateOf<String?>(null) }
-
-    val skinTones = listOf(
-        "#F9E4D4" to "포슬린",
-        "#F3D6C1" to "아이보리",
-        "#E8C3A9" to "내추럴 샌드",
-        "#E5B899" to "웜 허니",
-        "#C6906B" to "앰버 브론즈",
-        "#8D5B3E" to "에스프레소"
-    )
 
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = modifier
             .fillMaxWidth()
             .testTag("avatar_mannequin_designer_card")
@@ -245,12 +238,12 @@ fun AvatarMannequinDesignerCard(
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Column {
                         Text(
-                            text = "${metrics.displayName}님의 신체 치수 & 마네킹 설정",
+                            text = "내 아바타 만들기",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${metrics.heightCm.roundToInt()}cm · ${metrics.weightKg.roundToInt()}kg · BMI ${String.format("%.1f", metrics.bmi)} (${metrics.bmiCategoryKo}) · ${metrics.bodyShape.labelKo}",
+                            text = "${metrics.heightCm.roundToInt()}cm · ${metrics.weightKg.roundToInt()}kg · ${metrics.bodyShape.labelKo}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -259,17 +252,26 @@ fun AvatarMannequinDesignerCard(
 
                 OutlinedButton(
                     onClick = { isFormExpanded = !isFormExpanded },
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.testTag("toggle_measurement_form_button")
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = ZigzagStrong
+                    ),
+                    border = BorderStroke(1.dp, ZigzagHairline),
+                    modifier = Modifier
+                        .height(34.dp)
+                        .testTag("toggle_measurement_form_button")
                 ) {
                     Icon(
                         imageVector = if (isFormExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (isFormExpanded) "폼 접기" else "치수 편집")
+                    Text(
+                        text = if (isFormExpanded) "접기" else "치수 변경",
+                        style = MaterialTheme.typography.labelMedium
+                    )
                 }
             }
 
@@ -285,7 +287,7 @@ fun AvatarMannequinDesignerCard(
                 Box(
                     modifier = Modifier
                         .weight(1.15f)
-                        .height(310.dp)
+                        .height(210.dp)
                         .clip(RoundedCornerShape(20.dp))
                         .background(Color(0xFFF3EFE8))
                         .border(1.dp, Color(0xFFD8D0C2), RoundedCornerShape(20.dp))
@@ -298,12 +300,12 @@ fun AvatarMannequinDesignerCard(
                         modifier = Modifier.fillMaxSize()
                     )
 
-                    // Top-left Pose Switcher Pill
+                    // Top-Right Pose Switcher Pill (Avoid overlap with left height calipers)
                     Surface(
-                        color = AtelierMidnight.copy(alpha = 0.82f),
+                        color = ZigzagCtaBlack.copy(alpha = 0.85f),
                         shape = RoundedCornerShape(50),
                         modifier = Modifier
-                            .align(Alignment.TopStart)
+                            .align(Alignment.TopEnd)
                             .padding(8.dp)
                             .clickable {
                                 val nextOrd = (poseView.ordinal + 1) % MannequinPoseView.entries.size
@@ -312,33 +314,16 @@ fun AvatarMannequinDesignerCard(
                             .testTag("mannequin_pose_toggle")
                     ) {
                         Text(
-                            text = "뷰: ${poseView.labelKo} ↻",
+                            text = "${poseView.labelKo} ↻",
                             style = MaterialTheme.typography.labelSmall,
                             color = AtelierChampagne,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         )
                     }
-
-                    // Top-right Caliper Overlay Toggle
-                    IconButton(
-                        onClick = { showMeasurementCalipers = !showMeasurementCalipers },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .size(32.dp)
-                            .testTag("toggle_calipers_button")
-                    ) {
-                        Icon(
-                            imageVector = if (showMeasurementCalipers) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = "치수 가이드라인 표시",
-                            tint = AtelierMidnight,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
                 }
 
-                // Right: Live Body Ratio & Fit Telemetry Summary
+                // Right: Live Body Shape Result Summary
                 Column(
                     modifier = Modifier.weight(0.95f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -348,99 +333,69 @@ fun AvatarMannequinDesignerCard(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+                        Column(modifier = Modifier.padding(14.dp)) {
                             Text(
-                                text = "아바타 체형 리포트",
+                                text = "내 체형 결과",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = AtelierChampagne
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = metrics.bodyShape.labelKo,
                                 style = MaterialTheme.typography.titleMedium,
                                 color = AtelierIvory,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = metrics.bodyShape.descriptionKo,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = AtelierIvory.copy(alpha = 0.82f)
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AtelierIvory.copy(alpha = 0.86f),
+                                lineHeight = 18.sp
                             )
                         }
                     }
 
-                    RatioMetricTile(
-                        title = "어깨 : 허리 비율",
-                        value = String.format("1 : %.2f", 1f / metrics.shoulderToWaistRatio.coerceAtLeast(0.5f)),
-                        badge = "${metrics.shoulderWidthCm.roundToInt()}cm / ${metrics.waistCm.roundToInt()}cm"
-                    )
-                    RatioMetricTile(
-                        title = "허리 인치 / WHR",
-                        value = String.format("%.1f inch", metrics.waistInches),
-                        badge = String.format("WHR %.2f", metrics.waistToHipRatio)
-                    )
-                    RatioMetricTile(
-                        title = "하체 비율 (인심)",
-                        value = "${(metrics.legToHeightRatio * 100f).roundToInt()}%",
-                        badge = "인심 ${metrics.inseamCm.roundToInt()}cm"
-                    )
-
-                    OutlinedButton(
-                        onClick = {
-                            val detected = AvatarBodyMetrics.autoClassifyBodyShape(
-                                shoulderWidthCm = metrics.shoulderWidthCm,
-                                chestCm = metrics.chestCm,
-                                waistCm = metrics.waistCm,
-                                hipCm = metrics.hipCm,
-                                bmi = metrics.bmi
-                            )
-                            onMetricsChanged(metrics.copy(bodyShape = detected))
-                            autoDetectNotice = "✨ 입력된 치수(어깨 ${metrics.shoulderWidthCm.roundToInt()}cm·허리 ${metrics.waistCm.roundToInt()}cm·힙 ${metrics.hipCm.roundToInt()}cm)를 분석해 '${detected.labelKo}'으로 자동 매칭했습니다."
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("auto_classify_body_shape_button")
+                    Surface(
+                        color = Color(0xFFF1F5F9),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("AI 체형 자동 판별", style = MaterialTheme.typography.labelMedium)
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = "체형 맞춤 코디 안내",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF334155)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = metrics.bodyShape.stylingTip,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF475569),
+                                lineHeight = 17.sp
+                            )
+                        }
                     }
                 }
             }
 
-            if (autoDetectNotice != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    color = AtelierSage.copy(alpha = 0.14f),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = autoDetectNotice!!,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = AtelierSage,
-                        modifier = Modifier.padding(10.dp)
-                    )
-                }
-            }
-
-            // 3. Expandable Interactive Body Measurement Input Form
+            // 3. Simple & Intuitive Body Measurement Input Form
             AnimatedVisibility(visible = isFormExpanded) {
                 Column(modifier = Modifier.padding(top = 14.dp)) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "정밀 신체 치수 입력 폼 (슬라이더 또는 수치 직접 입력)",
+                        text = "키와 몸무게 맞추기",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
                     ReassuranceNoticeCard(
-                        heading = "소중한 체형 데이터는 안전하게 보호돼요",
-                        body = "입력하신 키, 체중, 어깨, 허리 치수는 오직 3D 아바타 피팅 핏 계산에만 사용되며 외부에 공개되지 않아요."
+                        heading = "내 체형 정보는 나만 볼 수 있어요",
+                        body = "입력한 키와 몸무게는 아바타를 만들 때만 안전하게 쓰여요."
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -453,7 +408,7 @@ fun AvatarMannequinDesignerCard(
                         OutlinedTextField(
                             value = metrics.displayName,
                             onValueChange = { onMetricsChanged(metrics.copy(displayName = it)) },
-                            label = { Text("아바타 이름 / 닉네임") },
+                            label = { Text("닉네임") },
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
@@ -464,22 +419,21 @@ fun AvatarMannequinDesignerCard(
                             onClick = {
                                 val reset = AvatarBodyMetrics.fromUserProfile(UserProfile(userId = profile.userId))
                                 onMetricsChanged(reset)
-                                autoDetectNotice = null
                             },
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.testTag("reset_measurements_button")
                         ) {
                             Icon(Icons.Default.RestartAlt, contentDescription = "초기화", modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("표준치 초기화")
+                            Text("원래대로")
                         }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Sliders + Direct Stepper Controls for Primary & Secondary Measurements
+                    // Height Slider
                     MeasurementSliderRow(
-                        label = "키 (신장)",
+                        label = "키",
                         unit = "cm",
                         value = metrics.heightCm,
                         valueRange = 145f..200f,
@@ -489,8 +443,9 @@ fun AvatarMannequinDesignerCard(
                         testTagPrefix = "height"
                     )
 
+                    // Weight Slider
                     MeasurementSliderRow(
-                        label = "몸무게 (체중)",
+                        label = "몸무게",
                         unit = "kg",
                         value = metrics.weightKg,
                         valueRange = 40f..120f,
@@ -500,66 +455,11 @@ fun AvatarMannequinDesignerCard(
                         testTagPrefix = "weight"
                     )
 
-                    MeasurementSliderRow(
-                        label = "어깨너비",
-                        unit = "cm",
-                        value = metrics.shoulderWidthCm,
-                        valueRange = 34f..56f,
-                        onValueChange = { newSh ->
-                            onMetricsChanged(metrics.copy(shoulderWidthCm = newSh))
-                        },
-                        testTagPrefix = "shoulder"
-                    )
-
-                    MeasurementSliderRow(
-                        label = "가슴둘레",
-                        unit = "cm",
-                        value = metrics.chestCm,
-                        valueRange = 76f..120f,
-                        onValueChange = { newCh ->
-                            onMetricsChanged(metrics.copy(chestCm = newCh))
-                        },
-                        testTagPrefix = "chest"
-                    )
-
-                    MeasurementSliderRow(
-                        label = "허리둘레 (${String.format("%.1f", metrics.waistInches)}인치)",
-                        unit = "cm",
-                        value = metrics.waistCm,
-                        valueRange = 56f..110f,
-                        onValueChange = { newWa ->
-                            onMetricsChanged(metrics.copy(waistCm = newWa))
-                        },
-                        testTagPrefix = "waist"
-                    )
-
-                    MeasurementSliderRow(
-                        label = "엉덩이둘레 (힙)",
-                        unit = "cm",
-                        value = metrics.hipCm,
-                        valueRange = 80f..120f,
-                        onValueChange = { newHip ->
-                            onMetricsChanged(metrics.copy(hipCm = newHip))
-                        },
-                        testTagPrefix = "hip"
-                    )
-
-                    MeasurementSliderRow(
-                        label = "다리 인심 (안쪽 기장)",
-                        unit = "cm",
-                        value = metrics.inseamCm,
-                        valueRange = 64f..92f,
-                        onValueChange = { newInseam ->
-                            onMetricsChanged(metrics.copy(inseamCm = newInseam))
-                        },
-                        testTagPrefix = "inseam"
-                    )
-
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Body Shape Selector Chips
+                    // 5 Representative Body Shape Filter Chips
                     Text(
-                        text = "체형 실루엣 프리셋 (클릭 시 마네킹 골격 비율 즉시 반영)",
+                        text = "대표 체형 바로 고르기",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -584,59 +484,6 @@ fun AvatarMannequinDesignerCard(
                                 ),
                                 modifier = Modifier.testTag("body_shape_chip_${shape.code}")
                             )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Skin Tone Swatches
-                    Text(
-                        text = "아바타 피부 톤 설정",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                    ) {
-                        skinTones.forEach { (hex, toneName) ->
-                            val isSelected = metrics.skinToneHex.equals(hex, ignoreCase = true)
-                            Surface(
-                                shape = RoundedCornerShape(50),
-                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                                modifier = Modifier
-                                    .clickable {
-                                        onMetricsChanged(metrics.copy(skinToneHex = hex))
-                                    }
-                                    .testTag("skin_tone_chip_${hex.removePrefix("#")}")
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(20.dp)
-                                            .clip(CircleShape)
-                                            .background(parseHexColorSafe(hex))
-                                            .border(
-                                                width = if (isSelected) 2.dp else 1.dp,
-                                                color = if (isSelected) AtelierMidnight else Color.Gray,
-                                                shape = CircleShape
-                                            )
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = toneName,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                }
-                            }
                         }
                     }
 
@@ -667,7 +514,7 @@ fun AvatarMannequinDesignerCard(
                             .testTag("save_avatar_measurements_button")
                     ) {
                         Text(
-                            text = "내 신체 치수 & 아바타 마네킹 저장하기",
+                            text = "아바타 저장하기",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -755,23 +602,29 @@ private fun MeasurementSliderRow(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 IconButton(
                     onClick = {
                         val next = (value - 1f).coerceIn(valueRange.start, valueRange.endInclusive)
                         onValueChange(next)
                     },
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(36.dp)
                         .testTag("${testTagPrefix}_minus_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Remove,
                         contentDescription = "$label 감소",
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
 
@@ -793,8 +646,8 @@ private fun MeasurementSliderRow(
                         fontWeight = FontWeight.Bold
                     ),
                     modifier = Modifier
-                        .width(70.dp)
-                        .height(46.dp)
+                        .width(68.dp)
+                        .height(44.dp)
                         .testTag("${testTagPrefix}_input")
                 )
 
@@ -811,13 +664,13 @@ private fun MeasurementSliderRow(
                         onValueChange(next)
                     },
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(36.dp)
                         .testTag("${testTagPrefix}_plus_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "$label 증가",
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

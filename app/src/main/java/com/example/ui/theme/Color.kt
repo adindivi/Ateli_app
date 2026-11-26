@@ -41,7 +41,7 @@ val AstryxLightPillBg = ZigzagHairline
 
 val AtelierMidnight = ZigzagStrong
 val AtelierDeepPlum = ZigzagCtaBlack
-val AtelierChampagne = ZigzagStrong
+val AtelierChampagne = ZigzagCtaText // Fixed: Light text on dark surfaces (resolves black-on-black text bug)
 val AtelierChampagneLight = ZigzagHairline
 val AtelierCoral = Color(0xFFD9483B)
 val AtelierSage = Color(0xFF2E7D5B)

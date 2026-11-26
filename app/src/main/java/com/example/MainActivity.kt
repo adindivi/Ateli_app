@@ -5,22 +5,40 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccessibilityNew
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Checkroom
-import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.ExperimentalMaterial3Api
+import kotlinx.coroutines.launch
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,12 +83,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.data.configureAppCheck
 import com.example.data.local.LocalFittingHistoryRepository
 import com.example.data.local.AteliLocalDatabase
+import com.example.data.model.Garment
 import com.example.data.repository.WardrobeRepository
 import com.example.ui.auth.AuthScreen
 import com.example.ui.auth.signOutUser
 import com.example.ui.components.FintechFloatingToast
 import com.example.ui.screens.AiStylistChatScreen
-import com.example.ui.screens.AnalyticsScreen
 import com.example.ui.screens.TpoStylingScreen
 import com.example.ui.screens.VirtualFittingScreen
 import com.example.ui.screens.WardrobeScreen
@@ -137,10 +155,9 @@ enum class AteliTab(
     val icon: ImageVector
 ) {
     WARDROBE("wardrobe", "내 옷장", Icons.Default.Checkroom),
-    VIRTUAL_FITTING("fitting", "3D 피팅", Icons.Default.AccessibilityNew),
-    TPO_STYLING("tpo_styling", "오늘 코디", Icons.Default.AutoAwesome),
-    AI_CHAT("ai_chat", "스타일챗", Icons.Default.ChatBubbleOutline),
-    ANALYTICS("analytics", "옷장 리포트", Icons.Default.Insights)
+    TPO_STYLING("tpo_styling", "오늘 옷", Icons.Default.WbSunny),
+    VIRTUAL_FITTING("fitting", "입어보기", Icons.Default.AccessibilityNew),
+    AI_CHAT("ai_chat", "AI 코디", Icons.Default.ChatBubbleOutline)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -182,9 +199,14 @@ fun AteliMainApp(
     val recentFittingHistory by viewModel.recentFittingHistoryState.collectAsStateWithLifecycle()
 
     var currentTab by rememberSaveable { mutableStateOf(AteliTab.WARDROBE) }
-    var isProEnterpriseMode by rememberSaveable { mutableStateOf(true) }
-    var isProDarkMode by rememberSaveable { mutableStateOf(false) }
+    var pendingLookGarments by remember { mutableStateOf<List<Garment>>(emptyList()) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val showFintechToastAction: (String) -> Unit = { msg ->
+        coroutineScope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(msg)
+        }
+    }
 
     // Mandatory BackHandler for secondary tabs when using custom state switching
     BackHandler(enabled = currentTab != AteliTab.WARDROBE) {
@@ -198,9 +220,7 @@ fun AteliMainApp(
         }
     }
 
-    val skuCount = (garmentsState as? com.example.viewmodel.DataUiState.Success)?.data?.size ?: 0
-
-    AteliTheme(darkTheme = isProDarkMode) {
+    AteliTheme {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val isExpandedScreen = maxWidth >= 600.dp
 
@@ -212,94 +232,49 @@ fun AteliMainApp(
                     }
                 },
                 topBar = {
-                    Column {
-                        TopAppBar(
-                            title = {
-                                Text(
-                                    text = currentTab.labelKo,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = ZigzagStrong
-                                )
-                            },
-                            actions = {
-                                IconButton(
-                                    onClick = {
-                                        signOutUser(
-                                            context = context,
-                                            onSignOutComplete = {},
-                                            scope = coroutineScope
-                                        )
-                                    },
-                                    modifier = Modifier.testTag("sign_out_button")
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Logout,
-                                        contentDescription = "로그아웃",
-                                        tint = ZigzagForeground
-                                    )
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = ZigzagCanvas,
-                                titleContentColor = ZigzagStrong,
-                                actionIconContentColor = ZigzagForeground
+                    TopAppBar(
+                        title = {
+                            Text(
+                                text = currentTab.labelKo,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ZigzagStrong
                             )
+                        },
+                        actions = {
+                            IconButton(
+                                onClick = {
+                                    signOutUser(
+                                        context = context,
+                                        onSignOutComplete = {},
+                                        scope = coroutineScope
+                                    )
+                                },
+                                modifier = Modifier.testTag("sign_out_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                                    contentDescription = "로그아웃",
+                                    tint = ZigzagForeground
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = ZigzagCanvas,
+                            titleContentColor = ZigzagStrong,
+                            actionIconContentColor = ZigzagForeground
                         )
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = ZigzagHairline
-                        )
-                        com.example.ui.components.EnterpriseProCommandBar(
-                            isProEnterpriseMode = isProEnterpriseMode,
-                            isProDarkMode = isProDarkMode,
-                            skuCount = skuCount,
-                            weatherSummary = "${weatherState.cityLabelKo} ${weatherState.temperatureC.toInt()}°C",
-                            onToggleEnterpriseMode = { isProEnterpriseMode = !isProEnterpriseMode },
-                            onToggleDarkMode = { isProDarkMode = !isProDarkMode }
-                        )
-                    }
+                    )
                 },
             bottomBar = {
                 if (!isExpandedScreen) {
-                    Column {
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = ZigzagHairline
-                        )
-                        NavigationBar(
-                            containerColor = ZigzagCanvas,
-                            tonalElevation = 0.dp
-                        ) {
-                            AteliTab.entries.forEach { tab ->
-                                NavigationBarItem(
-                                    selected = currentTab == tab,
-                                    onClick = { currentTab = tab },
-                                    icon = {
-                                        Icon(
-                                            imageVector = tab.icon,
-                                            contentDescription = tab.labelKo
-                                        )
-                                    },
-                                    label = {
-                                        Text(
-                                            text = tab.labelKo,
-                                            style = ZigzagTabBarLink,
-                                            color = if (currentTab == tab) ZigzagStrong else ZigzagMuted
-                                        )
-                                    },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = ZigzagStrong,
-                                        selectedTextColor = ZigzagStrong,
-                                        indicatorColor = ZigzagHairline.copy(alpha = 0.5f),
-                                        unselectedIconColor = ZigzagMuted,
-                                        unselectedTextColor = ZigzagMuted
-                                    ),
-                                    modifier = Modifier.testTag("nav_tab_${tab.route}")
-                                )
-                            }
+                    AppleFloatingNavigationDock(
+                        currentTab = currentTab,
+                        onTabSelected = { currentTab = it },
+                        onSearchClick = {
+                            currentTab = AteliTab.WARDROBE
                         }
-                    }
+                    )
                 }
             }
         ) { innerPadding ->
@@ -327,7 +302,10 @@ fun AteliMainApp(
                     }
                 }
 
-                Box(modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.TopCenter
+                ) {
                     when (currentTab) {
                         AteliTab.WARDROBE -> WardrobeScreen(
                             garmentsState = garmentsState,
@@ -337,10 +315,18 @@ fun AteliMainApp(
                             onParseReceipt = viewModel::parseReceiptAndRegister,
                             onProcessPhoto = viewModel::processGarmentPhotoAndRegister,
                             onQuickAddGarment = viewModel::addQuickManualGarment,
+                            onPhotoCutoutRegistered = viewModel::addPhotoCutoutGarment,
                             onIncrementWear = viewModel::incrementGarmentWearCount,
                             onDeleteGarment = viewModel::deleteGarment,
                             onResetAiState = viewModel::resetAiRegistrationState,
-                            onOpenVirtualFitting = { currentTab = AteliTab.VIRTUAL_FITTING }
+                            onOpenVirtualFitting = { currentTab = AteliTab.VIRTUAL_FITTING },
+                            onOpenVirtualFittingWithLook = { selectedLook ->
+                                pendingLookGarments = selectedLook
+                                currentTab = AteliTab.VIRTUAL_FITTING
+                            },
+                            userProfileState = profileState,
+                            onSavePersonalColorTone = viewModel::savePersonalColorTone,
+                            onShowToast = showFintechToastAction
                         )
 
                         AteliTab.VIRTUAL_FITTING -> VirtualFittingScreen(
@@ -348,6 +334,8 @@ fun AteliMainApp(
                             garmentsState = garmentsState,
                             cutoutBitmaps = cutoutBitmaps,
                             recentFittingHistory = recentFittingHistory,
+                            preselectedLookGarments = pendingLookGarments,
+                            onConsumePreselectedLook = { pendingLookGarments = emptyList() },
                             onRecordFittingAttempt = viewModel::recordFittingAttempt,
                             onTogglePinFittingRecord = viewModel::togglePinFittingRecord,
                             onDeleteFittingRecord = viewModel::deleteFittingRecord,
@@ -364,7 +352,8 @@ fun AteliMainApp(
                                     aiStylingNote = note,
                                     fitScore = score
                                 )
-                            }
+                            },
+                            onShowToast = showFintechToastAction
                         )
 
                         AteliTab.TPO_STYLING -> TpoStylingScreen(
@@ -391,7 +380,8 @@ fun AteliMainApp(
                                 )
                             },
                             onIncrementWear = viewModel::incrementGarmentWearCount,
-                            onDeleteSavedOutfit = viewModel::deleteSavedOutfit
+                            onDeleteSavedOutfit = viewModel::deleteSavedOutfit,
+                            onShowToast = showFintechToastAction
                         )
 
                         AteliTab.AI_CHAT -> AiStylistChatScreen(
@@ -403,26 +393,130 @@ fun AteliMainApp(
                             weather = weatherState,
                             onSelectModel = viewModel::selectChatModel,
                             onSendMessage = viewModel::sendChatMessage,
-                            onClearChat = viewModel::clearChatHistory
-                        )
-
-                        AteliTab.ANALYTICS -> AnalyticsScreen(
-                            garmentsState = garmentsState,
-                            cutoutBitmaps = cutoutBitmaps,
-                            onIncrementWear = viewModel::incrementGarmentWearCount,
-                            onAskAiStylist = { prompt ->
-                                val profile = (profileState as? com.example.viewmodel.DataUiState.Success)?.data
-                                    ?: com.example.data.model.UserProfile()
-                                val garments = (garmentsState as? com.example.viewmodel.DataUiState.Success)?.data
-                                    ?: emptyList()
-                                currentTab = AteliTab.AI_CHAT
-                                viewModel.sendChatMessage(prompt, profile, garments, weatherState)
-                            }
+                            onClearChat = viewModel::clearChatHistory,
+                            onShowToast = showFintechToastAction
                         )
                     }
                 }
             }
         }
     }
+    }
+}
+
+/**
+ * Apple Store (iOS 18) Signature Floating Island Navigation Dock.
+ * Features a frosted/translucent glass pill capsule on the left and a dedicated circular FAB on the right.
+ */
+@Composable
+fun AppleFloatingNavigationDock(
+    currentTab: AteliTab,
+    onTabSelected: (AteliTab) -> Unit,
+    onSearchClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        // 1. Floating Pill Navigation Capsule
+        Surface(
+            modifier = Modifier
+                .weight(1f)
+                .height(62.dp)
+                .shadow(
+                    elevation = 10.dp,
+                    shape = RoundedCornerShape(32.dp),
+                    spotColor = Color.Black.copy(alpha = 0.14f),
+                    ambientColor = Color.Black.copy(alpha = 0.06f)
+                ),
+            shape = RoundedCornerShape(32.dp),
+            color = Color.White.copy(alpha = 0.96f),
+            border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.06f))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AteliTab.entries.forEach { tab ->
+                    val isSelected = currentTab == tab
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(52.dp)
+                            .clip(RoundedCornerShape(26.dp))
+                            .background(
+                                if (isSelected) Color(0xFF0071E3).copy(alpha = 0.12f)
+                                else Color.Transparent
+                            )
+                            .clickable { onTabSelected(tab) }
+                            .padding(vertical = 4.dp)
+                            .testTag("apple_dock_tab_${tab.route}"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = tab.labelKo,
+                                tint = if (isSelected) Color(0xFF0071E3) else Color(0xFF86868B),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = tab.labelKo,
+                                style = TextStyle(
+                                    fontSize = 10.5.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color(0xFF0071E3) else Color(0xFF86868B),
+                                    platformStyle = @Suppress("DEPRECATION") androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Apple Store Floating Circular Search Action Button
+        Surface(
+            modifier = Modifier
+                .size(62.dp)
+                .shadow(
+                    elevation = 10.dp,
+                    shape = CircleShape,
+                    spotColor = Color.Black.copy(alpha = 0.14f),
+                    ambientColor = Color.Black.copy(alpha = 0.06f)
+                ),
+            shape = CircleShape,
+            color = Color.White.copy(alpha = 0.96f),
+            border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.06f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { onSearchClick() }
+                    .testTag("apple_dock_search_button"),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "검색",
+                    tint = ZigzagStrong,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
     }
 }

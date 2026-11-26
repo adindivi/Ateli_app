@@ -17,6 +17,7 @@ import com.example.data.remote.WeatherWardrobeMatcher
 import com.example.data.repository.WardrobeRepository
 import com.example.ui.components.AvatarBodyMetrics
 import com.example.util.BitmapUtils
+import com.example.util.PersonalColorSeason
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.Schema
@@ -151,50 +152,72 @@ class AteliViewModel(
         )
     }
 
+    val isGuestMode: Boolean = currentUserId.startsWith("guest")
+    private val _guestProfile = MutableStateFlow(UserProfile(userId = currentUserId, displayName = "아틀리에 디렉터", preferredCity = "SEOUL"))
+    private val _guestGarments = MutableStateFlow<List<Garment>>(
+        if (isGuestMode) CuratedWardrobePresets.starterWardrobeItems() else emptyList()
+    )
+    private val _guestOutfits = MutableStateFlow<List<SavedOutfit>>(emptyList())
+
     // Real-time Firestore StateFlows with Two-Tier Error Handling
-    val profileState: StateFlow<DataUiState<UserProfile>> = repository.observeUserProfile(currentUserId)
-        .map<UserProfile?, DataUiState<UserProfile>> { profile ->
-            DataUiState.Success(profile ?: UserProfile(userId = currentUserId))
-        }
-        .catch { e ->
-            Log.w(TAG, "Error observing user profile", e)
-            emit(DataUiState.Error(e.localizedMessage ?: "프로필을 불러오지 못했습니다."))
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = DataUiState.Loading
-        )
+    val profileState: StateFlow<DataUiState<UserProfile>> = if (isGuestMode) {
+        _guestProfile.map { DataUiState.Success(it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), DataUiState.Success(_guestProfile.value))
+    } else {
+        repository.observeUserProfile(currentUserId)
+            .map<UserProfile?, DataUiState<UserProfile>> { profile ->
+                DataUiState.Success(profile ?: UserProfile(userId = currentUserId))
+            }
+            .catch { e ->
+                Log.w(TAG, "Error observing user profile", e)
+                emit(DataUiState.Error(e.localizedMessage ?: "프로필을 불러오지 못했습니다."))
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000L),
+                initialValue = DataUiState.Loading
+            )
+    }
 
-    val garmentsState: StateFlow<DataUiState<List<Garment>>> = repository.observeGarments(currentUserId)
-        .map<List<Garment>, DataUiState<List<Garment>>> { list ->
-            val sorted = list.sortedByDescending { it.createdAt?.seconds ?: 0L }
-            DataUiState.Success(sorted)
-        }
-        .catch { e ->
-            Log.w(TAG, "Error observing garments", e)
-            emit(DataUiState.Error(e.localizedMessage ?: "옷장 데이터를 불러오지 못했습니다."))
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = DataUiState.Loading
-        )
+    val garmentsState: StateFlow<DataUiState<List<Garment>>> = if (isGuestMode) {
+        _guestGarments.map { DataUiState.Success(it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), DataUiState.Success(_guestGarments.value))
+    } else {
+        repository.observeGarments(currentUserId)
+            .map<List<Garment>, DataUiState<List<Garment>>> { list ->
+                val sorted = list.sortedByDescending { it.createdAt?.seconds ?: 0L }
+                DataUiState.Success(sorted)
+            }
+            .catch { e ->
+                Log.w(TAG, "Error observing garments", e)
+                emit(DataUiState.Error(e.localizedMessage ?: "옷장 데이터를 불러오지 못했습니다."))
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000L),
+                initialValue = DataUiState.Loading
+            )
+    }
 
-    val savedOutfitsState: StateFlow<DataUiState<List<SavedOutfit>>> = repository.observeSavedOutfits(currentUserId)
-        .map<List<SavedOutfit>, DataUiState<List<SavedOutfit>>> { list ->
-            val sorted = list.sortedByDescending { it.createdAt?.seconds ?: 0L }
-            DataUiState.Success(sorted)
-        }
-        .catch { e ->
-            Log.w(TAG, "Error observing outfits", e)
-            emit(DataUiState.Error(e.localizedMessage ?: "저장된 코디를 불러오지 못했습니다."))
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = DataUiState.Loading
-        )
+    val savedOutfitsState: StateFlow<DataUiState<List<SavedOutfit>>> = if (isGuestMode) {
+        _guestOutfits.map { DataUiState.Success(it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), DataUiState.Success(emptyList()))
+    } else {
+        repository.observeSavedOutfits(currentUserId)
+            .map<List<SavedOutfit>, DataUiState<List<SavedOutfit>>> { list ->
+                val sorted = list.sortedByDescending { it.createdAt?.seconds ?: 0L }
+                DataUiState.Success(sorted)
+            }
+            .catch { e ->
+                Log.w(TAG, "Error observing outfits", e)
+                emit(DataUiState.Error(e.localizedMessage ?: "저장된 코디를 불러오지 못했습니다."))
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000L),
+                initialValue = DataUiState.Loading
+            )
+    }
 
     private val _weatherState = MutableStateFlow(WeatherContext())
     val weatherState: StateFlow<WeatherContext> = _weatherState.asStateFlow()
@@ -216,9 +239,9 @@ class AteliViewModel(
 
     private val defaultGreetingMessage = ChatMessage(
         id = "welcome_msg",
-        text = "안녕하세요! Ateli(아틀리에) 수석 AI 퍼스널 스타일리스트입니다. 회원님의 체형 치수, 실시간 날씨, 그리고 옷장 가성비(CPW) 데이터를 바탕으로 맞춤형 코디와 쇼핑 전략을 제안해 드릴게요. 무엇이든 물어보세요!",
+        text = "안녕하세요! 오늘 어떤 옷 입을지 같이 골라볼까요? 날씨나 체형에 맞는 코디부터 옷장 정리까지 편하게 물어보세요 :)",
         isUser = false,
-        modelBadge = "AI 퍼스널 스타일리스트"
+        modelBadge = "AI 코디"
     )
 
     private val _chatMessages = MutableStateFlow(listOf(defaultGreetingMessage))
@@ -386,6 +409,12 @@ class AteliViewModel(
     }
 
     fun seedStarterWardrobe() {
+        if (isGuestMode) {
+            val starters = CuratedWardrobePresets.starterWardrobeItems()
+            _guestGarments.value = starters
+            _statusBannerMessage.value = "스타터 스마트 옷장 9벌이 등록되었어요"
+            return
+        }
         viewModelScope.launch {
             val starters = CuratedWardrobePresets.starterWardrobeItems()
             var addedCount = 0
@@ -400,6 +429,11 @@ class AteliViewModel(
     }
 
     fun saveBodyProfile(profile: UserProfile) {
+        if (isGuestMode) {
+            _guestProfile.value = profile
+            _statusBannerMessage.value = "내 체형 프로필(${BodyShapeType.fromCode(profile.bodyShape).labelKo})이 저장되었습니다."
+            return
+        }
         viewModelScope.launch {
             repository.saveUserProfile(profile)
                 .onSuccess {
@@ -412,8 +446,40 @@ class AteliViewModel(
         }
     }
 
+    fun savePersonalColorTone(season: PersonalColorSeason) {
+        val current = _guestProfile.value
+        val updated = current.copy(personalColorTone = season.code)
+        if (isGuestMode) {
+            _guestProfile.value = updated
+            _statusBannerMessage.value = "퍼스널 컬러가 '${season.labelKo}'(으)로 적용되었어요."
+            return
+        }
+        viewModelScope.launch {
+            repository.saveUserProfile(updated)
+                .onSuccess {
+                    _statusBannerMessage.value = "퍼스널 컬러가 '${season.labelKo}'(으)로 적용되었어요."
+                }
+                .onFailure { e ->
+                    _statusBannerMessage.value = e.localizedMessage ?: "퍼스널 컬러 저장 실패"
+                }
+        }
+    }
+
     fun incrementGarmentWearCount(garment: Garment) {
         if (garment.id.isBlank()) return
+        if (isGuestMode) {
+            val list = _guestGarments.value.toMutableList()
+            val idx = list.indexOfFirst { it.id == garment.id }
+            if (idx >= 0) {
+                val current = list[idx]
+                val newCount = current.wearCount + 1L
+                val newCpw = current.purchasePrice / newCount
+                list[idx] = current.copy(wearCount = newCount)
+                _guestGarments.value = list
+                _statusBannerMessage.value = "'${garment.name}' 착용 +1회 기록! (현재 CPW: ${String.format("%,d", newCpw)}원)"
+            }
+            return
+        }
         viewModelScope.launch {
             repository.incrementWearCount(garment.id, garment.wearCount)
                 .onSuccess {
@@ -426,6 +492,11 @@ class AteliViewModel(
 
     fun deleteGarment(garmentId: String) {
         if (garmentId.isBlank()) return
+        if (isGuestMode) {
+            _guestGarments.value = _guestGarments.value.filterNot { it.id == garmentId }
+            _statusBannerMessage.value = "선택한 의류가 옷장에서 삭제되었습니다."
+            return
+        }
         viewModelScope.launch {
             repository.deleteGarment(garmentId)
                 .onSuccess {
@@ -434,7 +505,35 @@ class AteliViewModel(
         }
     }
 
+    fun cacheCutoutBitmap(garmentId: String, bitmap: Bitmap) {
+        val current = _processedCutoutBitmaps.value.toMutableMap()
+        current[garmentId] = bitmap
+        _processedCutoutBitmaps.value = current
+    }
+
+    fun addPhotoCutoutGarment(
+        garment: Garment,
+        cutoutBitmap: Bitmap? = null
+    ) {
+        val generatedId = if (garment.id.isNotBlank()) garment.id else "garment_${System.currentTimeMillis()}"
+        val toSave = garment.copy(
+            id = generatedId,
+            sourceType = "PHOTO_CUTOUT"
+        )
+        if (cutoutBitmap != null) {
+            cacheCutoutBitmap(generatedId, cutoutBitmap)
+        }
+        addQuickManualGarment(toSave)
+    }
+
     fun addQuickManualGarment(garment: Garment) {
+        if (isGuestMode) {
+            val generatedId = "guest_garment_${System.currentTimeMillis()}"
+            val newGarment = garment.copy(id = generatedId)
+            _guestGarments.value = listOf(newGarment) + _guestGarments.value
+            _statusBannerMessage.value = "⚡ '${garment.name}' 아이템이 5초 퀵 등록으로 옷장에 추가되었습니다!"
+            return
+        }
         viewModelScope.launch {
             repository.addGarment(garment)
                 .onSuccess {

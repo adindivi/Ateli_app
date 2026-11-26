@@ -27,8 +27,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.ZoomIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -68,7 +68,6 @@ import com.example.data.model.Garment
 import com.example.data.model.UserProfile
 import com.example.ui.components.AvatarBodyMetrics
 import com.example.ui.components.AvatarMannequinDesignerCard
-import com.example.ui.components.B2BTailoringFitSpecCard
 import com.example.ui.components.GarmentCutoutIllustration
 import com.example.ui.components.ParametricAvatarMannequinCanvas
 import com.example.ui.components.RecentFittingTimelineSection
@@ -93,6 +92,8 @@ fun VirtualFittingScreen(
     garmentsState: DataUiState<List<Garment>>,
     cutoutBitmaps: Map<String, Bitmap>,
     recentFittingHistory: List<FittingHistoryEntity> = emptyList(),
+    preselectedLookGarments: List<Garment> = emptyList(),
+    onConsumePreselectedLook: () -> Unit = {},
     onRecordFittingAttempt: (
         outer: Garment?,
         top: Garment?,
@@ -118,7 +119,8 @@ fun VirtualFittingScreen(
         shoes: Garment?,
         aiStylingNote: String,
         fitScore: Int
-    ) -> Unit
+    ) -> Unit,
+    onShowToast: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val profile = (profileState as? DataUiState.Success)?.data ?: UserProfile()
@@ -188,6 +190,26 @@ fun VirtualFittingScreen(
         if (selectedShoes == null) selectedShoes = shoesList.firstOrNull()
     }
 
+    LaunchedEffect(preselectedLookGarments) {
+        if (preselectedLookGarments.isNotEmpty()) {
+            val preOuter = preselectedLookGarments.lastOrNull { it.category == "OUTER" }
+            val preTop = preselectedLookGarments.lastOrNull { it.category == "TOP" }
+            val preBottom = preselectedLookGarments.lastOrNull { it.category == "BOTTOM" }
+            val preShoes = preselectedLookGarments.lastOrNull { it.category == "SHOES" }
+
+            if (preOuter != null) {
+                selectedOuter = preOuter
+            } else if (preTop != null || preBottom != null) {
+                selectedOuter = null
+            }
+            if (preTop != null) selectedTop = preTop
+            if (preBottom != null) selectedBottom = preBottom
+            if (preShoes != null) selectedShoes = preShoes
+            lastTriggerSource = "옷장 멀티 탭 코디 (${preselectedLookGarments.size}벌)"
+            onConsumePreselectedLook()
+        }
+    }
+
     // Automatically record every unique outfit combination tried on the Virtual Fitting Canvas into local Room DB
     LaunchedEffect(selectedOuter?.id, selectedTop?.id, selectedBottom?.id, selectedShoes?.id) {
         if (selectedTop != null || selectedBottom != null || selectedOuter != null) {
@@ -238,7 +260,7 @@ fun VirtualFittingScreen(
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 840.dp)
+                .widthIn(max = 680.dp)
                 .fillMaxHeight()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
@@ -270,7 +292,7 @@ fun VirtualFittingScreen(
                         .testTag("subtab_fitting_canvas")
                 ) {
                     Text(
-                        text = "가상 피팅 캔버스",
+                        text = "입혀보기",
                         style = com.example.ui.theme.ZigzagTabSelected.copy(
                             fontSize = 14.sp,
                             color = if (fittingSubTab == "CANVAS") ZigzagCtaText else ZigzagMuted
@@ -291,7 +313,7 @@ fun VirtualFittingScreen(
                         .testTag("subtab_recent_fitting")
                 ) {
                     Text(
-                        text = "최근 피팅 (${recentFittingHistory.size})",
+                        text = "최근 기록 (${recentFittingHistory.size})",
                         style = com.example.ui.theme.ZigzagTabSelected.copy(
                             fontSize = 14.sp,
                             color = if (fittingSubTab == "RECENT_TIMELINE") ZigzagCtaText else ZigzagMuted
@@ -353,6 +375,7 @@ fun VirtualFittingScreen(
             },
             onSaveProfile = { updatedProfile ->
                 onSaveBodyProfile(updatedProfile)
+                onShowToast("체형 정보가 안전하게 저장되었어요")
             }
         )
 
@@ -396,69 +419,31 @@ fun VirtualFittingScreen(
                             modifier = Modifier.testTag("toggle_2d_canvas_chip")
                         )
                     }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Row {
-                        Button(
+
+                    if (canvasRenderMode == "2D_CAD") {
+                        IconButton(
                             onClick = {
-                                // Random Coordi Roulette Gamification
-                                lastTriggerSource = "🎲 랜덤 룰렛"
-                                if (tops.isNotEmpty()) selectedTop = tops[Random.nextInt(tops.size)]
-                                if (bottoms.isNotEmpty()) selectedBottom = bottoms[Random.nextInt(bottoms.size)]
-                                if (shoesList.isNotEmpty()) selectedShoes = shoesList[Random.nextInt(shoesList.size)]
-                                selectedOuter = if (outers.isNotEmpty() && Random.nextBoolean()) {
-                                    outers[Random.nextInt(outers.size)]
-                                } else outers.firstOrNull()
-                                rouletteReason = "🎲 랜덤 코디 룰렛이 [${selectedTop?.colorName ?: ""} + ${selectedBottom?.colorName ?: ""}] 톤앤매너 매칭을 완성했어요!"
+                                outerOffsetX = 22f
+                                outerOffsetY = -42f
+                                topOffsetX = 0f
+                                topOffsetY = -48f
+                                bottomOffsetX = 0f
+                                bottomOffsetY = 52f
+                                shoesOffsetX = 0f
+                                shoesOffsetY = 148f
+                                garmentScale = 1.0f
                             },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AtelierCoral,
-                                contentColor = Color.White
-                            ),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.testTag("random_roulette_button")
+                            modifier = Modifier
+                                .size(34.dp)
+                                .testTag("reset_fitting_canvas_offsets")
                         ) {
-                            Text("랜덤 룰렛", style = MaterialTheme.typography.labelLarge)
+                            Icon(
+                                imageVector = Icons.Outlined.Refresh,
+                                contentDescription = "위치 초기화",
+                                tint = AtelierMidnight,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
-
-                        if (canvasRenderMode == "2D_CAD") {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            IconButton(
-                                onClick = {
-                                    outerOffsetX = 22f
-                                    outerOffsetY = -42f
-                                    topOffsetX = 0f
-                                    topOffsetY = -48f
-                                    bottomOffsetX = 0f
-                                    bottomOffsetY = 52f
-                                    shoesOffsetX = 0f
-                                    shoesOffsetY = 148f
-                                    garmentScale = 1.0f
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = "위치 초기화",
-                                    tint = AtelierMidnight
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (rouletteReason != null) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Surface(
-                        color = AtelierChampagne.copy(alpha = 0.25f),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = rouletteReason!!,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = AtelierMidnight,
-                            modifier = Modifier.padding(10.dp)
-                        )
                     }
                 }
 
@@ -502,7 +487,7 @@ fun VirtualFittingScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(390.dp)
+                            .height(320.dp)
                             .clip(RoundedCornerShape(18.dp))
                             .background(Color(0xFFEDE8DF))
                             .border(1.dp, Color(0xFFD8D0C2), RoundedCornerShape(18.dp)),
@@ -642,7 +627,7 @@ fun VirtualFittingScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ZoomIn,
+                        imageVector = Icons.Outlined.ZoomIn,
                         contentDescription = "핏 크기 조절",
                         tint = AtelierMidnight,
                         modifier = Modifier.size(20.dp)
@@ -683,7 +668,7 @@ fun VirtualFittingScreen(
             onToggleShoesLock = { shoesLocked = !shoesLocked },
             onCycleOuter = { delta ->
                 if (!outerLocked && outers.isNotEmpty()) {
-                    lastTriggerSource = "🎰 슬롯 교차 매칭"
+                    lastTriggerSource = "슬롯 매칭"
                     val idx = outers.indexOfFirst { it.id == selectedOuter?.id }
                     val nextIdx = if (idx < 0) 0 else (idx + delta + outers.size) % outers.size
                     selectedOuter = outers[nextIdx]
@@ -691,27 +676,27 @@ fun VirtualFittingScreen(
             },
             onCycleTop = { delta ->
                 if (!topLocked && tops.isNotEmpty()) {
-                    lastTriggerSource = "🎰 슬롯 교차 매칭"
+                    lastTriggerSource = "슬롯 매칭"
                     val idx = tops.indexOfFirst { it.id == selectedTop?.id }.coerceAtLeast(0)
                     selectedTop = tops[(idx + delta + tops.size) % tops.size]
                 }
             },
             onCycleBottom = { delta ->
                 if (!bottomLocked && bottoms.isNotEmpty()) {
-                    lastTriggerSource = "🎰 슬롯 교차 매칭"
+                    lastTriggerSource = "슬롯 매칭"
                     val idx = bottoms.indexOfFirst { it.id == selectedBottom?.id }.coerceAtLeast(0)
                     selectedBottom = bottoms[(idx + delta + bottoms.size) % bottoms.size]
                 }
             },
             onCycleShoes = { delta ->
                 if (!shoesLocked && shoesList.isNotEmpty()) {
-                    lastTriggerSource = "🎰 슬롯 교차 매칭"
+                    lastTriggerSource = "슬롯 매칭"
                     val idx = shoesList.indexOfFirst { it.id == selectedShoes?.id }.coerceAtLeast(0)
                     selectedShoes = shoesList[(idx + delta + shoesList.size) % shoesList.size]
                 }
             },
             onSpinUnlockedSlots = {
-                lastTriggerSource = "🎰 슬롯머신 스핀"
+                lastTriggerSource = "슬롯 스핀"
                 if (!outerLocked) {
                     selectedOuter = if (outers.isNotEmpty() && Random.nextBoolean()) {
                         outers[Random.nextInt(outers.size)]
@@ -728,17 +713,6 @@ fun VirtualFittingScreen(
                 }
                 rouletteReason = "🎰 잠금(🔒)된 아이템은 고정한 채 나머지 슬롯을 색채학 하모니 기준으로 리믹스했습니다!"
             }
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 2.8 B2B Pro CAD Tailoring Fit & Ease Allowance Inspector
-        B2BTailoringFitSpecCard(
-            metrics = liveMetrics,
-            outer = selectedOuter,
-            top = selectedTop,
-            bottom = selectedBottom,
-            garmentScale = garmentScale
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -821,7 +795,7 @@ fun VirtualFittingScreen(
                     selectedShoes,
                     liveMetrics,
                     canvasModeLabel,
-                    "✅ 코디 확정 저장",
+                    "코디 확정 저장",
                     garmentScale,
                     false,
                     false
@@ -842,7 +816,7 @@ fun VirtualFittingScreen(
                     bodyShape.stylingTip,
                     95
                 )
-                showFintechToast(context, "피팅 코디가 저장되고 착용이 기록되었어요")
+                onShowToast("피팅 코디가 저장되고 착용이 기록되었어요")
             },
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
