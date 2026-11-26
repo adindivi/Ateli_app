@@ -1,8 +1,5 @@
 package com.example.ui.screens
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -24,7 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -36,10 +32,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,10 +51,8 @@ import com.example.data.model.Garment
 import com.example.ui.components.B2BInventoryAuditAndEsgCard
 import com.example.ui.components.GarmentCutoutIllustration
 import com.example.ui.components.showFintechToast
-import com.example.util.toFormattedKrw
-import com.example.util.toFormattedWon
-import com.example.ui.components.StitchFixBuyOrNotSimulatorCard
-import com.example.ui.components.StylebookBreakEvenTrackerCard
+import com.example.ui.components.WardrobeCompatibilitySimulatorCard
+import com.example.ui.components.StylebookSignatureWearTrackerCard
 import com.example.ui.components.parseHexColorSafe
 import com.example.ui.theme.ZigzagCanvas
 import com.example.ui.theme.ZigzagCtaBlack
@@ -83,32 +74,30 @@ fun AnalyticsScreen(
     val context = LocalContext.current
     val garments = (garmentsState as? DataUiState.Success)?.data ?: emptyList()
 
-    val totalWardrobeValue = remember(garments) { garments.sumOf { it.purchasePrice } }
     val totalWearCount = remember(garments) { garments.sumOf { it.wearCount } }
-    val averageCpw = remember(garments) {
-        if (garments.isEmpty()) 0L
-        else garments.sumOf { it.costPerWear } / garments.size
+    val activeCount = remember(garments) { garments.count { it.wearCount >= 2L } }
+    val activeRatePercent = remember(garments, activeCount) {
+        if (garments.isEmpty()) 0
+        else ((activeCount.toDouble() / garments.size.toDouble()) * 100.0).toInt()
     }
 
-    // Top 3 Most Worn & Best CPW ("뽕 뽑은 효자 옷 Top 3")
-    val top3BestValue = remember(garments) {
+    // Top 3 Most Worn Signature Items
+    val top3MostWorn = remember(garments) {
         garments.filter { it.wearCount > 0L }
-            .sortedWith(compareByDescending<Garment> { it.wearCount }.thenBy { it.costPerWear })
+            .sortedWith(compareByDescending<Garment> { it.wearCount }.thenBy { it.name })
             .take(3)
     }
 
-    // Closet Sleepers ("1년 내내 안 입은 방치템 / 당근마켓 판매 추천")
+    // Closet Sleepers (0~1 wears needing styling activation)
     val unwornSleepers = remember(garments) {
         garments.filter { it.wearCount <= 1L }
-            .sortedByDescending { it.purchasePrice }
+            .sortedBy { it.wearCount }
     }
 
     val dormantRatePercent = remember(garments, unwornSleepers) {
         if (garments.isEmpty()) 0
         else ((unwornSleepers.size.toDouble() / garments.size.toDouble()) * 100.0).toInt()
     }
-
-    var copiedResaleNotice by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -132,14 +121,14 @@ fun AnalyticsScreen(
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Text(
-                    text = "내 옷장 통계",
+                    text = "내 옷장 스타일 활용 리포트",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = ZigzagStrong
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "자주 입을수록 돈 아끼는 거예요",
+                    text = "보유한 옷을 고르게 입을수록 나만의 시그니처 스타일이 완성돼요",
                     style = MaterialTheme.typography.bodySmall,
                     color = ZigzagSecondary
                 )
@@ -151,21 +140,21 @@ fun AnalyticsScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     MetricBox(
-                        label = "총 옷값",
-                        value = totalWardrobeValue.toFormattedKrw(),
-                        subLabel = "총 ${garments.size}벌",
+                        label = "보유 의류",
+                        value = "${garments.size}벌",
+                        subLabel = "총 ${totalWearCount}회 착용",
                         modifier = Modifier.weight(1f)
                     )
                     MetricBox(
-                        label = "한 번 입을 때",
-                        value = averageCpw.toFormattedKrw(),
-                        subLabel = "${totalWearCount}번 입었어요",
+                        label = "옷장 활용도",
+                        value = "${activeRatePercent}%",
+                        subLabel = "주력 ${activeCount}벌 활용 중",
                         modifier = Modifier.weight(1f)
                     )
                     MetricBox(
-                        label = "안 입는 옷",
+                        label = "휴면 의류",
                         value = "${dormantRatePercent}%",
-                        subLabel = "${unwornSleepers.size}벌 남음",
+                        subLabel = "${unwornSleepers.size}벌 코디 대기",
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -174,39 +163,39 @@ fun AnalyticsScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // 1.2 B2B Enterprise Inventory Audit, ESG Carbon & CSV ERP Exporter
+        // 1.2 Sustainability & Circular Wardrobe Card
         B2BInventoryAuditAndEsgCard(
             garments = garments
         )
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // 1.5 Stitch Fix & Musinsa Benchmark: 'Buy or Not?' Pre-Purchase Wardrobe Compatibility Simulator
-        StitchFixBuyOrNotSimulatorCard(
+        // 1.5 Wardrobe Compatibility Simulator
+        WardrobeCompatibilitySimulatorCard(
             ownedGarments = garments,
             onAskAiStylist = onAskAiStylist
         )
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // 1.8 Stylebook Benchmark: Target CPW Break-Even Goal Tracker (with Net Effective CPW & Resale Value)
+        // 1.8 Signature Wear Milestone Tracker
         if (garments.isNotEmpty()) {
-            StylebookBreakEvenTrackerCard(
+            StylebookSignatureWearTrackerCard(
                 garments = garments,
                 onWearPlusOne = onIncrementWear
             )
             Spacer(modifier = Modifier.height(20.dp))
         }
 
-        // 2. Top 3 Most Worn & Best CPW Leaderboard ("가장 많이 입은 효자 옷 Top 3")
+        // 2. Top 3 Most Worn Signature Items
         Text(
-            text = "가장 많이 입은 효자 옷 Top 3",
+            text = "가장 자주 입은 시그니처 의류 Top 3",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             color = ZigzagStrong
         )
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (top3BestValue.isEmpty()) {
+        if (top3MostWorn.isEmpty()) {
             Surface(
                 color = ZigzagCanvas,
                 shape = RoundedCornerShape(8.dp),
@@ -214,7 +203,7 @@ fun AnalyticsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "아직 착용 기록이 있는 의류가 없습니다. 옷장이나 코디 화면에서 '입음 +1'을 눌러 가성비를 측정해보세요!",
+                    text = "아직 착용 기록이 있는 의류가 없습니다. 옷장이나 코디 화면에서 '오늘 입었어요 +1'을 눌러 기록해보세요!",
                     style = MaterialTheme.typography.bodyMedium,
                     color = ZigzagSecondary,
                     modifier = Modifier.padding(16.dp)
@@ -222,8 +211,8 @@ fun AnalyticsScreen(
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                top3BestValue.forEachIndexed { idx, g ->
-                    TopCpwGarmentRow(
+                top3MostWorn.forEachIndexed { idx, g ->
+                    TopWornGarmentRow(
                         rank = idx + 1,
                         garment = g,
                         cutoutBitmap = cutoutBitmaps[g.id],
@@ -238,34 +227,18 @@ fun AnalyticsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 3. Unworn Closet Sleepers -> Karrot Market (당근마켓) Resale Recommendation
+        // 3. Unworn Closet Sleepers -> Styling Activation Suggestions
         Text(
-            text = "잠자는 옷장 방치템 · 리셀 추천",
+            text = "옷장 속 휴면 의류 · 코디 깨우기",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             color = ZigzagStrong
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "착용 횟수가 0~1회인 의류입니다. 지금 당근마켓에 중고로 정리하면 옷장 공간과 현금을 동시에 확보할 수 있어요!",
+            text = "착용 횟수가 0~1회인 의류입니다. 오늘 코디에 매치해 새로운 룩을 시도해 보세요!",
             style = MaterialTheme.typography.bodySmall,
             color = ZigzagSecondary
         )
-
-        if (copiedResaleNotice != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Surface(
-                color = ZigzagHairline,
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = copiedResaleNotice!!,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = ZigzagStrong,
-                    modifier = Modifier.padding(12.dp)
-                )
-            }
-        }
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -277,7 +250,7 @@ fun AnalyticsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "축하합니다! 방치된 옷 없이 모든 아이템을 알차게 입고 계시네요.",
+                    text = "모든 아이템을 고르게 입어주고 계시네요! 균형 잡힌 옷장입니다.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = ZigzagSecondary,
                     modifier = Modifier.padding(16.dp)
@@ -286,24 +259,11 @@ fun AnalyticsScreen(
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 unwornSleepers.forEach { sleeper ->
-                    val suggestedResalePrice = ((sleeper.purchasePrice * 0.62) / 1000).toLong() * 1000L
-                    SleeperResaleCard(
+                    SleeperStylingCard(
                         garment = sleeper,
-                        suggestedResalePrice = suggestedResalePrice,
                         cutoutBitmap = cutoutBitmaps[sleeper.id],
-                        onCopyKarrotDraft = {
-                            val draft = """
-                                [당근마켓 판매글 자동완성]
-                                제목: [${sleeper.brand}] ${sleeper.name} (${sleeper.colorName}) 상태 최상 양도합니다
-                                • 정가: ${sleeper.purchasePrice.toFormattedWon()}
-                                • 희망 판매가: ${suggestedResalePrice.toFormattedWon()}
-                                • 실착용 횟수: ${sleeper.wearCount}회 (보관 상태 최상)
-                                • 특징: ${sleeper.season} 시즌 / ${sleeper.subCategory} / ${sleeper.tpoTags.joinToString(", ")} 코디에 잘 어울립니다.
-                            """.trimIndent()
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                            clipboard?.setPrimaryClip(ClipData.newPlainText("당근마켓 판매글", draft))
-                            copiedResaleNotice = "🥕 '${sleeper.name}' 당근마켓 판매글이 클립보드에 복사되었습니다!"
-                            showFintechToast(context, "'${sleeper.name}' 당근 판매글이 복사되었어요")
+                        onAskAiCoordination = {
+                            onAskAiStylist("'${sleeper.brand} ${sleeper.name}'(${sleeper.colorName})를 활용한 오늘 코디를 추천해 주세요!")
                         },
                         onWearNow = {
                             onIncrementWear(sleeper)
@@ -332,7 +292,7 @@ fun AnalyticsScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "보유 아이템의 카테고리 비중과 컬러 분포를 분석해 중복 소비를 예방합니다.",
+                    text = "보유 아이템의 카테고리 비중과 컬러 분포를 분석해 균형 잡힌 옷장 구성을 돕습니다.",
                     style = MaterialTheme.typography.bodySmall,
                     color = ZigzagSecondary
                 )
@@ -428,7 +388,7 @@ fun AnalyticsScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 5. Weekly 5-Day Smart OOTD Rotation Planner (Maximizes CPW across Mon-Fri)
+        // 5. Weekly 5-Day Smart OOTD Rotation Planner
         val tops = remember(garments) { garments.filter { it.category == "TOP" } }
         val bottoms = remember(garments) { garments.filter { it.category == "BOTTOM" } }
         val outers = remember(garments) { garments.filter { it.category == "OUTER" } }
@@ -445,13 +405,13 @@ fun AnalyticsScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "주간 5일 (월~금) 가성비 코디 로테이션",
+                        text = "주간 5일 (월~금) 스마트 코디 로테이션",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = ZigzagStrong
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "착용 횟수가 적은 아이템을 우선 배치해 주간 평균 CPW를 낮추는 자동 스케줄입니다.",
+                        text = "착용 횟수가 적은 아이템을 우선 배치해 옷장 전체를 고르게 입는 자동 스케줄입니다.",
                         style = MaterialTheme.typography.bodySmall,
                         color = ZigzagSecondary
                     )
@@ -559,12 +519,13 @@ private fun MetricBox(
 }
 
 @Composable
-private fun TopCpwGarmentRow(
+private fun TopWornGarmentRow(
     rank: Int,
     garment: Garment,
     cutoutBitmap: Bitmap?,
     onIncrementWear: () -> Unit
 ) {
+    val signatureProgress = (garment.wearCount.toFloat() / 15f).coerceIn(0f, 1f)
     Card(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = ZigzagCanvas),
@@ -628,7 +589,7 @@ private fun TopCpwGarmentRow(
                             border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
                             Text(
-                                text = "1회 ${garment.costPerWear.toFormattedKrw()}",
+                                text = "${garment.wearCount}회 착용",
                                 style = TextStyle(
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -644,7 +605,7 @@ private fun TopCpwGarmentRow(
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "구매가 ${garment.purchasePrice.toFormattedKrw()} · ${garment.wearCount}회 (${garment.valueRecoveryPercent}%)",
+                        text = "${garment.colorName} · ${garment.subCategory} · ${(signatureProgress * 100).toInt()}%",
                         style = TextStyle(
                             fontSize = 12.sp,
                             color = ZigzagSecondary,
@@ -669,7 +630,7 @@ private fun TopCpwGarmentRow(
             Spacer(modifier = Modifier.height(10.dp))
 
             LinearProgressIndicator(
-                progress = { garment.valueRecoveryPercent / 100f },
+                progress = { signatureProgress },
                 color = ZigzagStrong,
                 trackColor = ZigzagHairline,
                 modifier = Modifier
@@ -682,11 +643,10 @@ private fun TopCpwGarmentRow(
 }
 
 @Composable
-private fun SleeperResaleCard(
+private fun SleeperStylingCard(
     garment: Garment,
-    suggestedResalePrice: Long,
     cutoutBitmap: Bitmap?,
-    onCopyKarrotDraft: () -> Unit,
+    onAskAiCoordination: () -> Unit,
     onWearNow: () -> Unit
 ) {
     Card(
@@ -734,12 +694,11 @@ private fun SleeperResaleCard(
                             border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
                             Text(
-                                text = "당근 ${suggestedResalePrice.toFormattedKrw()}",
+                                text = garment.subCategory,
                                 style = TextStyle(
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(0xFF1E293B),
-                                    fontFeatureSettings = "tnum",
                                     platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
                                 ),
                                 maxLines = 1,
@@ -750,7 +709,7 @@ private fun SleeperResaleCard(
                     }
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
-                        text = "구매가 ${garment.purchasePrice.toFormattedKrw()} · ${if (garment.wearCount == 0L) "미착용 방치" else "연 1회 착용"}",
+                        text = "${garment.colorName} · ${if (garment.wearCount == 0L) "미착용 아이템" else "1회 착용"}",
                         style = TextStyle(
                             fontSize = 12.sp,
                             color = ZigzagSecondary,
@@ -770,7 +729,7 @@ private fun SleeperResaleCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Button(
-                    onClick = onCopyKarrotDraft,
+                    onClick = onAskAiCoordination,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = ZigzagCtaBlack,
                         contentColor = ZigzagCtaText
@@ -778,15 +737,9 @@ private fun SleeperResaleCard(
                     shape = RoundedCornerShape(24.dp),
                     modifier = Modifier
                         .weight(1f)
-                        .testTag("copy_karrot_resale_${garment.id}")
+                        .testTag("ask_ai_sleeper_${garment.id}")
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("당근마켓 판매글 복사", style = MaterialTheme.typography.labelSmall, color = ZigzagCtaText)
+                    Text("이 옷 코디 추천받기", style = MaterialTheme.typography.labelSmall, color = ZigzagCtaText)
                 }
 
                 OutlinedButton(

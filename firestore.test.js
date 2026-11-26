@@ -52,7 +52,6 @@ function validGarmentPayload(userId, now) {
     thickness: "MEDIUM",
     waterResistant: true,
     tpoTags: ["출근", "데이트"],
-    purchasePrice: 129000,
     wearCount: 5,
     sourceType: "RECEIPT_AUTO",
     receiptStore: "무신사",
@@ -138,7 +137,7 @@ test("Shadow update / ghost field injection is rejected", async () => {
   );
 });
 
-test("Negative purchasePrice or invalid category enum is rejected", async () => {
+test("Negative wearCount or invalid category enum is rejected", async () => {
   const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
   const now = new Date();
   await assertFails(
@@ -149,7 +148,7 @@ test("Negative purchasePrice or invalid category enum is rejected", async () => 
       .doc("garment_neg")
       .set({
         ...validGarmentPayload(ALICE_UID, now),
-        purchasePrice: -1000,
+        wearCount: -1,
       })
   );
   await assertFails(

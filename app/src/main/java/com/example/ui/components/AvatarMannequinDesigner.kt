@@ -333,25 +333,27 @@ fun AvatarMannequinDesignerCard(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
+                        Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = "내 체형 결과",
+                                text = "체형",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = AtelierChampagne
+                                color = AtelierChampagne.copy(alpha = 0.78f),
+                                maxLines = 1
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = metrics.bodyShape.labelKo,
                                 style = MaterialTheme.typography.titleMedium,
                                 color = AtelierIvory,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = metrics.bodyShape.descriptionKo,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AtelierIvory.copy(alpha = 0.86f),
-                                lineHeight = 18.sp
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AtelierIvory.copy(alpha = 0.85f),
+                                maxLines = 2
                             )
                         }
                     }
@@ -363,17 +365,19 @@ fun AvatarMannequinDesignerCard(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = "체형 맞춤 코디 안내",
+                                text = "추천 핏",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF334155)
+                                color = Color(0xFF0071E3),
+                                maxLines = 1
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(3.dp))
                             Text(
                                 text = metrics.bodyShape.stylingTip,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF475569),
-                                lineHeight = 17.sp
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF334155),
+                                lineHeight = 16.sp,
+                                maxLines = 2
                             )
                         }
                     }
@@ -387,15 +391,15 @@ fun AvatarMannequinDesignerCard(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "키와 몸무게 맞추기",
+                        text = "체형 치수 설정",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    ReassuranceNoticeCard(
-                        heading = "내 체형 정보는 나만 볼 수 있어요",
-                        body = "입력한 키와 몸무게는 아바타를 만들 때만 안전하게 쓰여요."
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "내 기기 아바타 비율 계산에만 쓰여요.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 

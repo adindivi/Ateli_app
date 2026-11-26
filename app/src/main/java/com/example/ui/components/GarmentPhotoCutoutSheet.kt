@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Garment
 import com.example.ui.theme.ZigzagMuted
+import com.example.ui.theme.ZigzagSecondary
 import com.example.ui.theme.ZigzagStrong
 import com.example.util.BitmapUtils
 import kotlinx.coroutines.Dispatchers
@@ -178,7 +179,7 @@ fun GarmentPhotoCutoutSheet(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "스마트폰 온디바이스 AI로 배경을 0.2초 만에 제거해요",
+                        text = "온디바이스 AI 자동 배경 제거",
                         style = TextStyle(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Normal,
@@ -577,7 +578,6 @@ fun GarmentPhotoCutoutSheet(
                             brand = brandName.ifBlank { "자체 등록" },
                             category = selectedCategory,
                             subCategory = "사진 누끼",
-                            purchasePrice = 0L,
                             wearCount = 0L,
                             sourceType = "PHOTO_CUTOUT"
                         )
@@ -629,23 +629,11 @@ fun GarmentPhotoCutoutSheet(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "위의 버튼을 눌러 옷 사진을 등록해보세요",
+                            text = "옷 사진을 선택하면 배경을 자동 분리해요",
                             style = TextStyle(
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = ZigzagStrong,
-                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
-                            ),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "바닥이나 옷걸이에 걸고 촬영하면 AI가 옷만 깔끔하게 분리해요",
-                            style = TextStyle(
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = ZigzagMuted,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = ZigzagSecondary,
                                 platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
                             ),
                             maxLines = 1,

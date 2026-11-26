@@ -6,9 +6,11 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
@@ -201,10 +204,8 @@ object TailoringFitSpecEngine {
 
 data class EnterpriseAuditReport(
     val totalSkuCount: Int,
-    val totalAcquisitionCostKrw: Long,
-    val estimatedNetAssetValueKrw: Long,
+    val totalWearCount: Long,
     val activeUtilizationRatePercent: Int,
-    val averagePortfolioCpwKrw: Long,
     val carbonSavedKgCo2e: Float,
     val waterSavedLiters: Int,
     val esgGrade: String,
@@ -216,50 +217,38 @@ object EnterpriseB2BAnalyzer {
         if (garments.isEmpty()) {
             return EnterpriseAuditReport(
                 totalSkuCount = 0,
-                totalAcquisitionCostKrw = 0L,
-                estimatedNetAssetValueKrw = 0L,
+                totalWearCount = 0L,
                 activeUtilizationRatePercent = 0,
-                averagePortfolioCpwKrw = 0L,
                 carbonSavedKgCo2e = 0f,
                 waterSavedLiters = 0,
-                esgGrade = "N/A (재고 없음)",
-                csvPayload = "SKU_ID,BRAND,NAME,CATEGORY,COLOR,PRICE_KRW,WEAR_COUNT,CPW_KRW,RESALE_NAV_KRW"
+                esgGrade = "N/A (의류 없음)",
+                csvPayload = "SKU_ID,BRAND,NAME,CATEGORY,COLOR,WEAR_COUNT"
             )
         }
 
-        val totalCost = garments.sumOf { it.purchasePrice }
-        val totalNav = garments.sumOf { g ->
-            val retention = (0.62 - (g.wearCount.coerceAtMost(30L) * 0.012)).coerceIn(0.20, 0.62)
-            ((g.purchasePrice * retention) / 1000.0).toLong() * 1000L
-        }
         val activeCount = garments.count { it.wearCount >= 2L }
         val utilization = ((activeCount.toFloat() / garments.size.toFloat()) * 100f).roundToInt()
-        val avgCpw = garments.sumOf { it.costPerWear } / garments.size
 
-        // ESG metric: Every wear beyond 5 wears offsets fast-fashion replacement (~1.45 kg CO2e & 180L water)
+        // ESG metric: Every wear offsets fast-fashion replacement (~1.45 kg CO2e & 180L water)
         val totalWears = garments.sumOf { it.wearCount }
         val carbonSaved = ((totalWears * 1.45f) * 10f).roundToInt() / 10f
         val waterSaved = (totalWears * 180L).toInt()
         val esgGrade = when {
-            utilization >= 75 && avgCpw <= 18_000L -> "AAA (ESG 최우수 순환 옷장)"
-            utilization >= 50 -> "AA (우수 지속가능 포트폴리오)"
-            else -> "A (방치 재고 리밸런싱 권장)"
+            utilization >= 75 && totalWears >= garments.size * 5L -> "AAA (ESG 최우수 순환 옷장)"
+            utilization >= 50 -> "AA (우수 지속가능 옷장)"
+            else -> "A (휴면 의류 활용 권장)"
         }
 
-        val header = "SKU_ID,BRAND,NAME,CATEGORY,SUB_CATEGORY,COLOR,PRICE_KRW,WEAR_COUNT,CPW_KRW,RESALE_NAV_KRW"
+        val header = "SKU_ID,BRAND,NAME,CATEGORY,SUB_CATEGORY,COLOR,WEAR_COUNT"
         val rows = garments.mapIndexed { idx, g ->
             val sku = generateSkuCode(g, idx)
-            val retention = (0.62 - (g.wearCount.coerceAtMost(30L) * 0.012)).coerceIn(0.20, 0.62)
-            val nav = ((g.purchasePrice * retention) / 1000.0).toLong() * 1000L
-            "$sku,${g.brand.replace(",", " ")},${g.name.replace(",", " ")},${g.category},${g.subCategory},${g.colorName},${g.purchasePrice},${g.wearCount},${g.costPerWear},$nav"
+            "$sku,${g.brand.replace(",", " ")},${g.name.replace(",", " ")},${g.category},${g.subCategory},${g.colorName},${g.wearCount}"
         }
 
         return EnterpriseAuditReport(
             totalSkuCount = garments.size,
-            totalAcquisitionCostKrw = totalCost,
-            estimatedNetAssetValueKrw = totalNav,
+            totalWearCount = totalWears,
             activeUtilizationRatePercent = utilization,
-            averagePortfolioCpwKrw = avgCpw,
             carbonSavedKgCo2e = carbonSaved,
             waterSavedLiters = waterSaved,
             esgGrade = esgGrade,
@@ -575,24 +564,19 @@ fun B2BLookbookSpecSheetCard(
         "LB-2026-$hash"
     }
 
-    val totalLookPrice = remember(selectedItems) { selectedItems.sumOf { it.purchasePrice } }
-    val avgLookCpw = remember(selectedItems) {
-        if (selectedItems.isEmpty()) 0L else selectedItems.sumOf { it.costPerWear } / selectedItems.size
-    }
-
     val specSheetText = remember(docNumber, profile, weather, selectedItems, tpoLabel) {
         buildString {
             appendLine("==========================================")
-            appendLine("[SMART COORDI PRO · B2B CLIENT LOOKBOOK SPEC]")
+            appendLine("[ATELI STUDIO · CLIENT LOOKBOOK SPEC]")
             appendLine("문서번호: $docNumber | 클라이언트: ${profile.displayName} (${profile.heightCm}cm/${profile.weightKg}kg)")
             appendLine("TPO 세션: #$tpoLabel | 기상 기준: ${weather.summaryText}")
             appendLine("------------------------------------------")
             selectedItems.forEachIndexed { idx, g ->
                 val sku = EnterpriseB2BAnalyzer.generateSkuCode(g, idx)
-                appendLine("${idx + 1}. [$sku] ${g.brand} ${g.name} (${g.colorName}/${g.subCategory}) - ₩${String.format("%,d", g.purchasePrice)} (CPW ₩${String.format("%,d", g.costPerWear)})")
+                appendLine("${idx + 1}. [$sku] ${g.brand} ${g.name} (${g.colorName}/${g.subCategory} · ${g.wearCount}회 착용)")
             }
             appendLine("------------------------------------------")
-            appendLine("총 착장 자산가액: ₩${String.format("%,d", totalLookPrice)} | 평균 1회 착용단가: ₩${String.format("%,d", avgLookCpw)}")
+            appendLine("구성 아이템: 총 ${selectedItems.size}피스 코디 조합")
             appendLine("==========================================")
         }
     }
@@ -629,14 +613,13 @@ fun B2BLookbookSpecSheetCard(
                     )
                     Column {
                         Text(
-                            text = "📋 [B2B 쇼룸] VIP 클라이언트 룩북 스펙 시트 & QR 발행",
+                            text = "오늘 코디 룩북 QR",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.ExtraBold
                         )
                         Text(
-                            text = "DOC NO: $docNumber · 백화점 퍼스널 쇼퍼 & 스타일 컨설팅 표준 양식",
+                            text = "#$tpoLabel · ${selectedItems.size}피스 스펙 공유",
                             style = MaterialTheme.typography.labelSmall,
-                            fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -657,30 +640,32 @@ fun B2BLookbookSpecSheetCard(
                 ) {
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
                         Text(
-                            text = "CLIENT: ${profile.displayName} (${profile.heightCm}cm · ${profile.bodyShape})",
+                            text = "${profile.displayName} · ${profile.heightCm}cm",
                             style = MaterialTheme.typography.labelMedium,
-                            fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold
                         )
-                        selectedItems.take(4).forEachIndexed { idx, g ->
-                            val sku = EnterpriseB2BAnalyzer.generateSkuCode(g, idx)
-                            Text(
-                                text = "• $sku | ${g.name} (${g.colorName})",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontFamily = FontFamily.Monospace,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                        selectedItems.take(4).forEach { g ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(parseHexColorSafe(g.colorHex))
+                                )
+                                Text(
+                                    text = g.name,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
-                        Text(
-                            text = "총 견적 ₩${String.format("%,d", totalLookPrice)} · 평균 CPW ₩${String.format("%,d", avgLookCpw)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
@@ -859,9 +844,9 @@ fun B2BInventoryAuditAndEsgCard(
                     modifier = Modifier.weight(1f)
                 )
                 AuditMetricTile(
-                    title = "지금 중고 시세",
-                    value = "₩${String.format("%,d", audit.estimatedNetAssetValueKrw / 1000)}K",
-                    sub = "추정 가치",
+                    title = "총 누적 착용",
+                    value = "${audit.totalWearCount}회",
+                    sub = "옷장 순환 기록",
                     modifier = Modifier.weight(1f)
                 )
                 AuditMetricTile(
@@ -886,7 +871,7 @@ fun B2BInventoryAuditAndEsgCard(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "SKU_CODE       | CATEGORY | ITEM_NAME          | PRICE     | WEARS | CPW",
+                            text = "SKU_CODE       | CATEGORY | ITEM_NAME          | WEARS",
                             style = MaterialTheme.typography.labelSmall,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.ExtraBold,
@@ -896,7 +881,7 @@ fun B2BInventoryAuditAndEsgCard(
                         garments.forEachIndexed { idx, g ->
                             val sku = EnterpriseB2BAnalyzer.generateSkuCode(g, idx)
                             Text(
-                                text = "$sku | ${g.category.padEnd(8)} | ${g.name.take(10).padEnd(10)} | ₩${String.format("%,d", g.purchasePrice).padStart(7)} | ${String.format("%3d", g.wearCount)}회 | ₩${String.format("%,d", g.costPerWear)}",
+                                text = "$sku | ${g.category.padEnd(8)} | ${g.name.take(16).padEnd(16)} | ${String.format("%3d", g.wearCount)}회",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontFamily = FontFamily.Monospace
                             )

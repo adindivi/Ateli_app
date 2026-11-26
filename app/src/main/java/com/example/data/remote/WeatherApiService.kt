@@ -132,7 +132,7 @@ object WeatherWardrobeMatcher {
             scoreSingleGarment(garment, weather)
         }.sortedWith(
             compareByDescending<WeatherMatchedGarment> { it.suitabilityScore }
-                .thenBy { it.garment.wearCount } // Favor under-utilized items with high suitability to improve CPW
+                .thenBy { it.garment.wearCount } // Favor under-utilized items with high suitability to rotate the wardrobe
         )
 
         val bestOuter = if (weather.needsOuterLayer) {
@@ -157,29 +157,14 @@ object WeatherWardrobeMatcher {
 
         val suitable = markedRanked.filter { it.suitabilityScore >= 68 }
 
-        val headline = buildString {
-            append("${weather.cityLabelKo} ${weather.temperatureC.roundToInt()}°C (체감 ${weather.apparentTempC.roundToInt()}°C) 맞춤 옷장 큐레이션")
-        }
+        val headline = "${weather.cityLabelKo} ${weather.temperatureC.roundToInt()}°C · ${suitable.size}벌 추천"
 
-        val detail = buildString {
-            when {
-                weather.isRainyOrSnowy -> {
-                    append("강수 예보(${weather.rainProbabilityPercent}%)가 있어 생활방수 아우터·신발과 오염에 강한 다크톤 하의를 최우선으로 선별했습니다. ")
-                }
-                weather.dailyTempRangeC >= 8.0 -> {
-                    append("일교차가 ${weather.dailyTempRangeC.roundToInt()}°C로 커서 출퇴근길 탈착이 쉬운 레이어드 아우터와 미디엄 두께 이너를 조합했습니다. ")
-                }
-                weather.apparentTempC >= 23.0 -> {
-                    append("기온이 높아 통기성이 뛰어난 얇은(LIGHT) 두께감과 밝은 톤 아이템 위주로 추천합니다. ")
-                }
-                weather.apparentTempC <= 8.0 -> {
-                    append("체감온도가 낮아 보온성이 우수한 도톰한(HEAVY/MEDIUM) 니트와 코트류를 우선 배치했습니다. ")
-                }
-                else -> {
-                    append("야외 활동에 쾌적한 기온으로, 보유 옷장 중 활용도와 핏 밸런스가 뛰어난 아이템을 매칭했습니다. ")
-                }
-            }
-            append("(총 ${garments.size}벌 중 ${suitable.size}벌 적합 판정)")
+        val detail = when {
+            weather.isRainyOrSnowy -> "강수 ${weather.rainProbabilityPercent}% 대비 방수·다크톤 중심 코디"
+            weather.dailyTempRangeC >= 8.0 -> "일교차 ${weather.dailyTempRangeC.roundToInt()}°C 대비 레이어드 코디"
+            weather.apparentTempC >= 23.0 -> "가볍고 통기성 좋은 소재 중심 코디"
+            weather.apparentTempC <= 8.0 -> "보온성 높은 도톰한 아우터·니트 코디"
+            else -> "오늘 기온에 균형 잡힌 데일리 코디"
         }
 
         return WeatherWardrobeSuggestionSummary(
@@ -206,7 +191,7 @@ object WeatherWardrobeMatcher {
         val thicknessScore = when {
             apparent >= 23.0 -> when (garment.thickness) {
                 "LIGHT" -> {
-                    reasons.add("${apparent.roundToInt()}°C 기온에 쾌적한 가벼운(LIGHT) 소재")
+                    reasons.add("${apparent.roundToInt()}° 시원한 두께")
                     40
                 }
                 "MEDIUM" -> {
@@ -216,29 +201,29 @@ object WeatherWardrobeMatcher {
             }
             apparent >= 14.0 -> when (garment.thickness) {
                 "MEDIUM" -> {
-                    reasons.add("체감 ${apparent.roundToInt()}°C에 딱 맞는 적당한 두께감")
+                    reasons.add("${apparent.roundToInt()}° 딱 맞는 두께")
                     40
                 }
                 "LIGHT" -> {
-                    reasons.add("간절기 이너 및 레이어드에 적합한 두께")
+                    reasons.add("레이어드 최적")
                     36
                 }
                 else -> 16
             }
             apparent >= 7.0 -> when (garment.thickness) {
                 "MEDIUM" -> {
-                    reasons.add("선선한 기온(${apparent.roundToInt()}°C) 보온과 활동성 균형")
+                    reasons.add("${apparent.roundToInt()}° 보온·활동성")
                     38
                 }
                 "HEAVY" -> {
-                    reasons.add("쌀쌀한 바람을 막아주는 도톰한 보온 소재")
+                    reasons.add("보온 소재")
                     38
                 }
                 else -> if (garment.category == "TOP") 26 else 14
             }
             else -> when (garment.thickness) {
                 "HEAVY" -> {
-                    reasons.add("${apparent.roundToInt()}°C 저온 환경 필수 방한 두께")
+                    reasons.add("${apparent.roundToInt()}° 한파 보온")
                     40
                 }
                 "MEDIUM" -> 26
@@ -250,11 +235,11 @@ object WeatherWardrobeMatcher {
         // 2. Seasonality Match (Max 25 pts)
         val seasonScore = when {
             garment.season == weather.recommendedSeason -> {
-                reasons.add("현재 계절감(${seasonLabelKo(weather.recommendedSeason)}) 완벽 일치")
+                reasons.add("계절 일치")
                 25
             }
             garment.season == "ALL" -> {
-                reasons.add("사계절 전천후 활용 아이템")
+                reasons.add("사계절")
                 22
             }
             else -> 8
@@ -266,22 +251,22 @@ object WeatherWardrobeMatcher {
         if (weather.isRainyOrSnowy || weather.rainProbabilityPercent >= 50) {
             if (garment.waterResistant) {
                 weatherConditionScore = 25
-                reasons.add("☔ 강수확률 ${weather.rainProbabilityPercent}% 대비 생활방수·발수 기능 탑재")
+                reasons.add("☔ 생활방수")
             } else if (garment.category == "BOTTOM" && isDarkColor(garment.colorHex, garment.colorName)) {
                 weatherConditionScore = 22
-                reasons.add("우천 시 빗물 오염이 적은 다크톤 하의")
+                reasons.add("다크 하의")
             } else if (garment.subCategory.contains("스웨이드") || garment.colorName.contains("화이트") || garment.colorName.contains("크림")) {
                 weatherConditionScore = 5
-                reasons.add("우천 시 오염 주의 필요")
+                reasons.add("오염 주의")
             }
         } else {
             // Clear / Mild weather
             if (weather.dailyTempRangeC >= 7.5 && garment.category == "OUTER") {
                 weatherConditionScore = 25
-                reasons.add("일교차 ${weather.dailyTempRangeC.roundToInt()}°C 대비 탈착하기 좋은 아우터")
+                reasons.add("🌡️ 일교차 대비")
             } else if (weather.windSpeedKmh >= 12.0 && garment.category == "OUTER") {
                 weatherConditionScore = 24
-                reasons.add("바람(${weather.windSpeedKmh.roundToInt()}km/h)을 막아주는 방풍 실루엣")
+                reasons.add("🌬️ 방풍")
             } else if (!weather.needsOuterLayer && garment.category == "OUTER") {
                 weatherConditionScore = 8
             } else {
@@ -290,28 +275,28 @@ object WeatherWardrobeMatcher {
         }
         score += weatherConditionScore
 
-        // 4. Wardrobe Value Recovery (CPW) Bonus (Max 10 pts)
-        val cpwBonus = when {
+        // 4. Wardrobe Rotation Bonus (Max 10 pts)
+        val rotationBonus = when {
             garment.wearCount == 0L -> {
-                reasons.add("미착용 방치템 — 오늘 입으면 가성비(CPW) 대폭 상승!")
+                reasons.add("✨ 첫 착용 추천")
                 10
             }
             garment.wearCount <= 3L -> {
-                reasons.add("착용 횟수 ${garment.wearCount}회 — CPW 절감 추천 아이템")
+                reasons.add("${garment.wearCount}회 착용")
                 8
             }
             else -> 6
         }
-        score += cpwBonus
+        score += rotationBonus
 
         val finalScore = score.coerceIn(25, 99)
 
         val badge = when {
-            weather.isRainyOrSnowy && garment.waterResistant -> "☔ 우천 방수 추천 (${finalScore}%)"
-            weather.dailyTempRangeC >= 7.5 && garment.category == "OUTER" -> "🌡️ 일교차 아우터 (${finalScore}%)"
-            finalScore >= 88 -> "🌤️ 오늘 날씨 최적 (${finalScore}%)"
-            finalScore >= 75 -> "👍 날씨 적합 (${finalScore}%)"
-            else -> "보조 매칭 (${finalScore}%)"
+            weather.isRainyOrSnowy && garment.waterResistant -> "☔ 방수 ${finalScore}%"
+            weather.dailyTempRangeC >= 7.5 && garment.category == "OUTER" -> "🌡️ 일교차 ${finalScore}%"
+            finalScore >= 88 -> "🌤️ 최적 ${finalScore}%"
+            finalScore >= 75 -> "👍 적합 ${finalScore}%"
+            else -> "매칭 ${finalScore}%"
         }
 
         return WeatherMatchedGarment(

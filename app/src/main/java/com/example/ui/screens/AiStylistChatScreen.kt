@@ -88,10 +88,10 @@ fun AiStylistChatScreen(
     val listState = rememberLazyListState()
 
     val quickPrompts = listOf(
-        "오늘 뭐 입고 나갈까요?",
-        "안 입는 옷 어떻게 입을까요?",
-        "주말 코디 추천해줘요",
-        "새로 사면 좋을 옷이 뭘까요?"
+        "오늘 뭐 입을까?",
+        "안 입는 옷 활용",
+        "주말 코디 추천",
+        "어울릴 새 아이템"
     )
 
     LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length) {
@@ -148,7 +148,7 @@ fun AiStylistChatScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "옷장 ${garments.size}벌 · ${bodyShape.labelKo} · ${weather.cityLabelKo} ${weather.temperatureC.toInt()}°C",
+                                text = "${garments.size}벌 · ${bodyShape.labelKo} · ${weather.temperatureC.toInt()}°C",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = ZigzagSecondary
                             )
@@ -169,9 +169,9 @@ fun AiStylistChatScreen(
 
                 if (showClearChatDialog) {
                     FriendlyReassuranceDialog(
-                        title = "대화를 처음부터 다시 나눌까요?",
-                        reassuranceText = "지금까지 나눈 스타일링 대화 내용만 깔끔하게 비우며, 내 옷장에 등록된 옷과 저장된 코디는 그대로 안전하게 보관돼요.",
-                        primaryButtonText = "대화 계속하기",
+                        title = "대화를 새로 시작할까요?",
+                        reassuranceText = "대화 내역만 비우며 옷장과 코디는 유지돼요.",
+                        primaryButtonText = "계속하기",
                         onPrimaryClick = { showClearChatDialog = false },
                         secondaryButtonText = "대화 비우기",
                         onSecondaryClick = {

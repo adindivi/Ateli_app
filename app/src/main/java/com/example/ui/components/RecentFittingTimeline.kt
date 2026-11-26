@@ -122,9 +122,10 @@ fun RecentFittingTimelineSection(
                             color = AtelierChampagne
                         )
                         Text(
-                            text = "가상 피팅 캔버스에서 시도한 코디 조합들이 로컬에 자동 기록됩니다.",
+                            text = "시도한 코디 조합 자동 기록",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.78f)
+                            color = Color.White.copy(alpha = 0.78f),
+                            maxLines = 1
                         )
                     }
 
@@ -138,7 +139,7 @@ fun RecentFittingTimelineSection(
                         ) {
                             Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("비우기", style = MaterialTheme.typography.labelSmall)
+                            Text("비우기", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
                         }
                     }
                 }
@@ -148,17 +149,17 @@ fun RecentFittingTimelineSection(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     TimelineStatChip(
-                        label = "누적 피팅 시도",
+                        label = "피팅 시도",
                         value = "${historyList.size}회",
                         modifier = Modifier.weight(1f)
                     )
                     TimelineStatChip(
-                        label = "고정(Pin) 북마크",
+                        label = "북마크",
                         value = "${pinnedCount}건",
                         modifier = Modifier.weight(1f)
                     )
                     TimelineStatChip(
-                        label = "최고 하모니 점수",
+                        label = "최고 하모니",
                         value = if (bestHarmonyScore > 0) "${bestHarmonyScore}점" else "-",
                         modifier = Modifier.weight(1f)
                     )
@@ -175,7 +176,7 @@ fun RecentFittingTimelineSection(
                         .fillMaxWidth()
                         .testTag("record_current_fitting_snapshot_button")
                 ) {
-                    Text("현재 캔버스 착장 스냅샷 기록", fontWeight = FontWeight.Bold)
+                    Text("현재 착장 저장", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -188,15 +189,15 @@ fun RecentFittingTimelineSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             listOf(
-                "ALL" to "전체 타임라인 (${historyList.size})",
-                "PINNED" to "⭐ 고정 북마크 ($pinnedCount)",
-                "HIGH_SCORE" to "🏆 95점+ 베스트 핏",
-                "ROULETTE" to "🎰 슬롯·룰렛 조합"
+                "ALL" to "전체 (${historyList.size})",
+                "PINNED" to "⭐ 북마크 ($pinnedCount)",
+                "HIGH_SCORE" to "🏆 95점+",
+                "ROULETTE" to "🎰 슬롯 스핀"
             ).forEach { (code, label) ->
                 FilterChip(
                     selected = selectedFilter == code,
                     onClick = { selectedFilter = code },
-                    label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                    label = { Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false) },
                     modifier = Modifier.testTag("timeline_filter_$code")
                 )
             }
@@ -216,22 +217,22 @@ fun RecentFittingTimelineSection(
                         .fillMaxWidth()
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.History,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(36.dp)
                     )
                     Text(
-                        text = "표시할 최근 피팅 기록이 없습니다",
-                        style = MaterialTheme.typography.titleMedium,
+                        text = "피팅 기록이 아직 없어요",
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "가상 피팅 캔버스에서 의류를 선택하거나 '슬롯 스핀 / 랜덤 룰렛'을 돌리면 시도한 모든 코디 조합이 타임라인에 자동 저장됩니다.",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "가상 피팅 시 자동으로 타임라인에 남아요",
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -445,22 +446,39 @@ private fun TimelineNodeRow(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Text(
-                            text = "${record.harmonyFormulaKo} · ${record.cadFitGrade} (${record.recommendedKrSize})",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            val shortHarmony = record.harmonyFormulaKo.substringBefore(" (")
+                            val shortGrade = record.cadFitGrade.substringBefore(" (")
+                            val shortSize = record.recommendedKrSize.substringBefore(" (")
+                            listOf(shortHarmony, "$shortGrade 핏", shortSize).forEach { tag ->
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFF1F5F9)
+                                ) {
+                                    Text(
+                                        text = tag,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF334155),
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                     Surface(
                         shape = RoundedCornerShape(10.dp),
                         color = AtelierSage.copy(alpha = 0.16f)
                     ) {
                         Text(
-                            text = "하모니 ${record.harmonyScore}점",
+                            text = "${record.harmonyScore}점",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = AtelierSage,
+                            maxLines = 1,
+                            softWrap = false,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
@@ -483,18 +501,32 @@ private fun TimelineNodeRow(
 
                 HorizontalDivider()
 
-                // Bottom Row: Price/CPW Summary + 1-Tap Restore to 3D Canvas Button
+                // Bottom Row: Visual Color Swatches + 1-Tap Restore to 3D Canvas Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "착장 총액 ₩${String.format("%,d", record.totalOutfitPriceKrw)} · 평균 CPW ₩${String.format("%,d", record.averageCpwKrw)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        previewGarments.take(4).forEach { g ->
+                            Box(
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .clip(CircleShape)
+                                    .background(parseHexColorSafe(g.colorHex))
+                            )
+                        }
+                        Text(
+                            text = "${previewGarments.size}벌",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
 
                     Button(
                         onClick = onRestoreToCanvas,
@@ -511,7 +543,7 @@ private fun TimelineNodeRow(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "캔버스에 다시 입혀보기",
+                            text = "다시 입어보기",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold
                         )

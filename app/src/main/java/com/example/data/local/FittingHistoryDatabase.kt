@@ -55,8 +55,6 @@ data class FittingHistoryEntity(
     val harmonyFormulaKo: String = "아틀리에 톤온톤 하모니",
     val cadFitGrade: String = "S+ (Bespoke Master Fit)",
     val recommendedKrSize: String = "KR 100 (L)",
-    val totalOutfitPriceKrw: Long = 0L,
-    val averageCpwKrw: Long = 0L,
     val garmentScale: Float = 1.0f,
     val isPinned: Boolean = false,
     val timestampMillis: Long = System.currentTimeMillis()
@@ -142,7 +140,7 @@ interface FittingHistoryDao {
 
 @Database(
     entities = [FittingHistoryEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AteliLocalDatabase : RoomDatabase() {
@@ -261,9 +259,6 @@ class LocalFittingHistoryRepository(
                 bottom = bottom,
                 fitScaleMultiplier = garmentScale
             )
-            val totalPrice = items.sumOf { it.purchasePrice }
-            val avgCpw = if (items.isEmpty()) 0L else items.sumOf { it.costPerWear } / items.size
-
             val titleParts = listOfNotNull(
                 outer?.name,
                 top?.name,
@@ -308,8 +303,6 @@ class LocalFittingHistoryRepository(
                 harmonyFormulaKo = harmony.harmonyTypeKo,
                 cadFitGrade = cadSpec.overallFitGrade,
                 recommendedKrSize = cadSpec.recommendedKrSize,
-                totalOutfitPriceKrw = totalPrice,
-                averageCpwKrw = avgCpw,
                 garmentScale = garmentScale,
                 isPinned = false,
                 timestampMillis = timestampMillis

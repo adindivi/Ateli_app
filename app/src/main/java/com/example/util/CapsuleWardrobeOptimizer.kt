@@ -15,7 +15,7 @@ data class CapsuleWardrobeReport(
     val primaryMissingCategory: String, // "하의", "아우터" 등
     val recommendedGapItemName: String, // "세미와이드 블랙 슬랙스"
     val potentialNewOutfitsAdded: Int,  // +8개 추가 코디
-    val roiAdvice: String,              // 가성비 쇼핑 가이드
+    val stylingAdvice: String,          // 캡슐 코디 확장 가이드
     val categoryDistribution: Map<String, Int>
 )
 
@@ -40,7 +40,7 @@ object CapsuleWardrobeOptimizer {
                 primaryMissingCategory = "기본 상의",
                 recommendedGapItemName = "화이트 크루넥 티셔츠",
                 potentialNewOutfitsAdded = 5,
-                roiAdvice = "스타터 의류를 등록하면 캡슐 옷장 코디 그래프가 즉시 활성화됩니다.",
+                stylingAdvice = "스타터 의류를 등록하면 캡슐 옷장 코디 그래프가 즉시 활성화됩니다.",
                 categoryDistribution = emptyMap()
             )
         }
@@ -77,7 +77,7 @@ object CapsuleWardrobeOptimizer {
                     "하의",
                     "세미와이드 블랙 슬랙스",
                     added,
-                    "상의(${tops.size}벌)에 비해 하의가 부족합니다. 어떤 옷에나 어울리는 블랙 슬랙스 1벌만 들이면 새로운 룩이 즉시 +${added}개 확장돼요."
+                    "하의 1벌 추가 시 +${added}가지 새 코디"
                 )
             }
             outers.size <= 1 -> {
@@ -86,7 +86,7 @@ object CapsuleWardrobeOptimizer {
                     "아우터",
                     "테일러드 싱글 블레이저",
                     added,
-                    "출근과 하객룩을 아우르는 단정한 블레이저 1벌이 추가되면 기존 캐주얼 상의와 매치되어 +${added}개의 포멀 룩이 생겨납니다."
+                    "블레이저 추가 시 +${added}가지 포멀 룩"
                 )
             }
             tops.size <= 3 -> {
@@ -95,7 +95,7 @@ object CapsuleWardrobeOptimizer {
                     "상의",
                     "옥스포드 스트라이프 셔츠",
                     added,
-                    "단품으로도 이너로도 입을 수 있는 클래식 셔츠를 추천합니다. 코디 조합이 +${added}개 늘어납니다."
+                    "클래식 셔츠 추가 시 +${added}가지 코디"
                 )
             }
             else -> {
@@ -104,7 +104,7 @@ object CapsuleWardrobeOptimizer {
                     "신발",
                     "화이트 미니멀 레더 스니커즈",
                     added,
-                    "포멀과 캐주얼을 자유롭게 넘나드는 화이트 스니커즈로 캡슐 옷장의 활용도를 완성해 보세요."
+                    "화이트 스니커즈로 +${added}가지 룩 확장"
                 )
             }
         }
@@ -116,7 +116,7 @@ object CapsuleWardrobeOptimizer {
             primaryMissingCategory = missingCat,
             recommendedGapItemName = recommendedItem,
             potentialNewOutfitsAdded = addedOutfits,
-            roiAdvice = advice,
+            stylingAdvice = advice,
             categoryDistribution = distribution
         )
     }

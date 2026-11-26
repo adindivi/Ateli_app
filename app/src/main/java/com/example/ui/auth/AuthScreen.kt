@@ -5,6 +5,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -260,37 +261,45 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "내 옷장 정리부터\n아바타 피팅까지 한 번에",
+                text = "내 옷장부터 3D 피팅까지",
                 style = ZigzagBody.copy(color = ZigzagSecondary),
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(26.dp))
 
-            // ZIGZAG Product-led Feature Cards (0px/8px geometry, 1px #ECEDEE hairline)
-            FeatureHighlightCard(
-                icon = Icons.Default.AutoAwesome,
-                title = "사진 한 장으로 옷 등록",
-                subtitle = "영수증이나 사진만 올리면 옷장에 쏙 넣어드려요"
-            )
+            // Compact 2x2 visual icon tiles instead of wordy stacked feature descriptions
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FeatureCompactTile(
+                    icon = Icons.Default.AutoAwesome,
+                    title = "사진·주문 등록",
+                    modifier = Modifier.weight(1f)
+                )
+                FeatureCompactTile(
+                    icon = Icons.Default.Checkroom,
+                    title = "3D 아바타 피팅",
+                    modifier = Modifier.weight(1f)
+                )
+            }
             Spacer(modifier = Modifier.height(10.dp))
-            FeatureHighlightCard(
-                icon = Icons.Default.Checkroom,
-                title = "내 아바타에 입혀보기",
-                subtitle = "키와 몸무게를 넣고 내 옷을 직접 입혀보세요"
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            FeatureHighlightCard(
-                icon = Icons.Default.WbSunny,
-                title = "오늘 날씨 맞춤 추천",
-                subtitle = "지금 날씨에 딱 어울리는 옷을 골라드려요"
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            FeatureHighlightCard(
-                icon = Icons.Default.Insights,
-                title = "안 입는 옷 쏙 찾기",
-                subtitle = "자주 입은 옷과 옷장에 박힌 옷을 알려줘요"
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FeatureCompactTile(
+                    icon = Icons.Default.WbSunny,
+                    title = "오늘 날씨 코디",
+                    modifier = Modifier.weight(1f)
+                )
+                FeatureCompactTile(
+                    icon = Icons.Default.Insights,
+                    title = "착용 기록 관리",
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             Spacer(modifier = Modifier.height(28.dp))
 
@@ -351,30 +360,27 @@ fun AuthScreen(
 }
 
 @Composable
-private fun FeatureHighlightCard(
+private fun FeatureCompactTile(
     icon: ImageVector,
     title: String,
-    subtitle: String
+    modifier: Modifier = Modifier
 ) {
-    // Apple-Style Clean Showcase Card: 18dp curvature, soft off-white surface, minimal elegance
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF9F9FA)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFF8FAFC),
+        border = BorderStroke(1.dp, ZigzagHairline)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 15.dp),
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(10.dp))
                     .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
@@ -382,23 +388,16 @@ private fun FeatureHighlightCard(
                     imageVector = icon,
                     contentDescription = title,
                     tint = ZigzagStrong,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = ZigzagTabSelected.copy(fontWeight = FontWeight.Bold),
-                    color = ZigzagStrong
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    style = ZigzagMetadata,
-                    color = ZigzagSecondary
-                )
-            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = title,
+                style = ZigzagTabSelected.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+                color = ZigzagStrong,
+                maxLines = 1
+            )
         }
     }
 }

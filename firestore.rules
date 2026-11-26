@@ -52,9 +52,8 @@ service cloud.firestore {
              data.waterResistant is bool &&
              data.tpoTags is list && data.tpoTags.size() <= 10 &&
              (data.tpoTags.size() == 0 || (data.tpoTags[0] is string && data.tpoTags[0].size() <= 30)) &&
-             data.purchasePrice is int && data.purchasePrice >= 0 && data.purchasePrice <= 100000000 &&
              data.wearCount is int && data.wearCount >= 0 && data.wearCount <= 10000 &&
-             data.sourceType is string && data.sourceType in ['RECEIPT_AUTO', 'CAMERA_AI', 'CURATED_SAMPLE'] &&
+             data.sourceType is string && data.sourceType in ['RECEIPT_AUTO', 'CAMERA_AI', 'CURATED_SAMPLE', 'PHOTO_CUTOUT', 'QUICK_MANUAL'] &&
              (!('receiptStore' in data) || data.receiptStore == null || (data.receiptStore is string && data.receiptStore.size() <= 80)) &&
              data.createdAt is timestamp && data.createdAt <= request.time &&
              data.updatedAt is timestamp && data.updatedAt <= request.time;
@@ -124,14 +123,14 @@ service cloud.firestore {
                            'userId', 'name', 'brand', 'category', 'subCategory',
                            'colorName', 'colorHex', 'season', 'pattern',
                            'thickness', 'waterResistant', 'tpoTags',
-                           'purchasePrice', 'wearCount', 'sourceType',
+                           'wearCount', 'sourceType',
                            'createdAt', 'updatedAt'
                          ]) &&
                          incoming().keys().hasOnly([
                            'userId', 'name', 'brand', 'category', 'subCategory',
                            'colorName', 'colorHex', 'season', 'pattern',
                            'thickness', 'waterResistant', 'tpoTags',
-                           'purchasePrice', 'wearCount', 'sourceType', 'receiptStore',
+                           'wearCount', 'sourceType', 'receiptStore',
                            'createdAt', 'updatedAt'
                          ]) &&
                          isValidGarment(incoming());
@@ -149,7 +148,7 @@ service cloud.firestore {
                              'name', 'brand', 'category', 'subCategory',
                              'colorName', 'colorHex', 'season', 'pattern',
                              'thickness', 'waterResistant', 'tpoTags',
-                             'purchasePrice', 'wearCount', 'receiptStore', 'updatedAt'
+                             'wearCount', 'receiptStore', 'updatedAt'
                            ])
                          );
 

@@ -90,6 +90,8 @@ import com.example.ui.components.drawGarmentSilhouette
 import com.example.ui.components.parseHexColorSafe
 import com.example.ui.theme.ZigzagAppBanner
 import com.example.ui.theme.ZigzagCanvas
+import com.example.ui.theme.ZigzagCtaBlack
+import com.example.ui.theme.ZigzagCtaText
 import com.example.ui.theme.ZigzagForeground
 import com.example.ui.theme.ZigzagHairline
 import com.example.ui.theme.ZigzagMuted
@@ -117,7 +119,7 @@ fun WardrobeScreen(
     cutoutBitmaps: Map<String, Bitmap>,
     onSeedStarterWardrobe: () -> Unit,
     onParseReceipt: (String) -> Unit,
-    onProcessPhoto: (Bitmap, Long, String) -> Unit,
+    onProcessPhoto: (Bitmap, String) -> Unit,
     onQuickAddGarment: (Garment) -> Unit = {},
     onPhotoCutoutRegistered: (Garment, Bitmap?) -> Unit = { _, _ -> },
     onIncrementWear: (Garment) -> Unit,
@@ -181,9 +183,8 @@ fun WardrobeScreen(
         }
 
         when (sortMode) {
-            "BEST_CPW" -> byQuery.sortedWith(compareBy<Garment> { it.costPerWear }.thenByDescending { it.wearCount })
-            "SLEEPER_FIRST" -> byQuery.sortedWith(compareBy<Garment> { it.wearCount }.thenByDescending { it.purchasePrice })
-            "MOST_WORN" -> byQuery.sortedByDescending { it.wearCount }
+            "MOST_WORN" -> byQuery.sortedWith(compareByDescending<Garment> { it.wearCount }.thenBy { it.name })
+            "SLEEPER_FIRST" -> byQuery.sortedWith(compareBy<Garment> { it.wearCount }.thenBy { it.name })
             else -> byQuery
         }
     }
@@ -546,7 +547,7 @@ fun WardrobeScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "📊 캡슐 결핍(Gap) 리포트",
+                                text = "📊 캡슐 코디 리포트",
                                 style = TextStyle(
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold,
@@ -651,7 +652,7 @@ fun WardrobeScreen(
                     ) {
                         val sorts = listOf(
                             "RECENT" to "최신순",
-                            "BEST_CPW" to "많이 입은순",
+                            "MOST_WORN" to "많이 입은순",
                             "SLEEPER_FIRST" to "안 입는 순"
                         )
                         sorts.forEach { (code, label) ->
@@ -777,12 +778,12 @@ fun WardrobeScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
                 Text(
-                    text = "전자영수증 · 쇼핑몰 내역 AI 자동 등록",
+                    text = "주문 내역 자동 등록",
                     style = MaterialTheme.typography.titleLarge
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "결제 완료 문자나 이메일 영수증을 선택하거나 붙여넣으면 Gemini AI가 브랜드·가격·색상·카테고리·TPO 태그를 추출해 옷장에 등록합니다.",
+                    text = "주문 문자를 붙여넣으면 옷장에 자동 등록돼요",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -792,9 +793,16 @@ fun WardrobeScreen(
                         onParseReceipt(receiptInput)
                         showReceiptSheet = false
                     },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ZigzagCtaBlack,
+                        contentColor = ZigzagCtaText
+                    ),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text("영수증 분석 및 등록하기")
+                    Text(
+                        text = "자동 분석 · 등록",
+                        color = ZigzagCtaText
+                    )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -835,9 +843,9 @@ fun WardrobeScreen(
 
     pendingDeleteGarment?.let { garmentToDelete ->
         FriendlyReassuranceDialog(
-            title = "이 옷을 옷장에서 보낼까요?",
-            reassuranceText = "'${garmentToDelete.brand} ${garmentToDelete.name}'을(를) 삭제해도 지금까지의 착용 기록(${garmentToDelete.wearCount}회)과 가성비 리포트는 보존돼요.",
-            primaryButtonText = "옷장에 그대로 두기",
+            title = "이 옷을 삭제할까요?",
+            reassuranceText = "'${garmentToDelete.name}'을(를) 삭제해도 다른 코디와 착용 기록은 유지돼요.",
+            primaryButtonText = "그대로 두기",
             onPrimaryClick = { pendingDeleteGarment = null },
             secondaryButtonText = "삭제하기",
             onSecondaryClick = {

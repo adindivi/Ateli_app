@@ -294,17 +294,13 @@ fun ThreeDOverlayFittingCanvas(
             ) {
                 Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
                     Text(
-                        text = "3D OVERLAY RIG · YAW ${if (yawAngleDeg >= 0) "+${yawAngleDeg.toInt()}" else "${yawAngleDeg.toInt()}"}°",
+                        text = "3D RIG · ${metrics.heightCm.toInt()}cm · ${if (yawAngleDeg >= 0) "+${yawAngleDeg.toInt()}" else "${yawAngleDeg.toInt()}"}°",
                         style = MaterialTheme.typography.labelSmall,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.ExtraBold,
-                        color = AtelierChampagne
-                    )
-                    Text(
-                        text = "${metrics.heightCm.toInt()}cm · 어깨 ${metrics.shoulderWidthCm.toInt()} · 가슴 ${metrics.chestCm.toInt()} · 허리 ${metrics.waistCm.toInt()} · 힙 ${metrics.hipCm.toInt()}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = Color.White.copy(alpha = 0.85f)
+                        color = AtelierChampagne,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }

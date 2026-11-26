@@ -56,8 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import com.example.ui.components.showFintechToast
-import com.example.util.toFormattedKrw
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -75,7 +74,6 @@ import com.example.ui.components.ThreeDOverlayFittingCanvas
 import com.example.ui.components.ThreeJsFittingStudio
 import com.example.ui.components.WheringDressMeSlotBar
 import com.example.ui.theme.AtelierChampagne
-import com.example.ui.theme.AtelierCoral
 import com.example.ui.theme.AtelierMidnight
 import com.example.ui.theme.ZigzagCanvas
 import com.example.ui.theme.ZigzagHairline
@@ -205,7 +203,7 @@ fun VirtualFittingScreen(
             if (preTop != null) selectedTop = preTop
             if (preBottom != null) selectedBottom = preBottom
             if (preShoes != null) selectedShoes = preShoes
-            lastTriggerSource = "옷장 멀티 탭 코디 (${preselectedLookGarments.size}벌)"
+            lastTriggerSource = "선택 ${preselectedLookGarments.size}벌"
             onConsumePreselectedLook()
         }
     }
@@ -634,9 +632,11 @@ fun VirtualFittingScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "의류 핏 볼륨 (${(garmentScale * 100).toInt()}%)",
+                        text = "핏 볼륨 ${(garmentScale * 100).toInt()}%",
                         style = MaterialTheme.typography.labelLarge,
-                        color = AtelierMidnight
+                        color = AtelierMidnight,
+                        maxLines = 1,
+                        softWrap = false
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Slider(
@@ -711,7 +711,7 @@ fun VirtualFittingScreen(
                 if (!shoesLocked && shoesList.isNotEmpty()) {
                     selectedShoes = shoesList[Random.nextInt(shoesList.size)]
                 }
-                rouletteReason = "🎰 잠금(🔒)된 아이템은 고정한 채 나머지 슬롯을 색채학 하모니 기준으로 리믹스했습니다!"
+                rouletteReason = "잠금 제외 슬롯을 리믹스했어요"
             }
         )
 
@@ -818,13 +818,22 @@ fun VirtualFittingScreen(
                 )
                 onShowToast("피팅 코디가 저장되고 착용이 기록되었어요")
             },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ZigzagStrong,
+                contentColor = ZigzagCtaText
+            ),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp)
+                .height(52.dp)
                 .testTag("save_virtual_outfit_button")
         ) {
-            Text("오늘 이 코디 입기 & 저장 (착용 횟수 +1 자동 반영)")
+            Text(
+                text = "코디 저장 · +1 입기",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = ZigzagCtaText
+            )
         }
     }
 }
@@ -879,7 +888,7 @@ private fun SwipeableGarmentMiniCard(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "${garment.colorName} · ${garment.costPerWear.toFormattedKrw()}/회",
+                text = "${garment.colorName} · ${garment.wearCount}회 착용",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1

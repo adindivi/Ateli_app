@@ -5,49 +5,39 @@ import com.example.data.model.BodyShapeType
 import com.example.data.model.Garment
 import com.example.data.remote.WeatherContext
 import kotlin.math.abs
-import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 
 // ============================================================================
-// 1. Acloset (에이클로젯) 심층 엔진: 손익분기(Break-Even) & 감가상각 순수 CPW & 크로스 코디
+// 1. Acloset 벤치마킹 엔진: 의류 착용 활용도 & 크로스 코디 매칭 분석
 // ============================================================================
 
-data class BreakEvenAnalysis(
-    val currentCpw: Long,
-    val netEffectiveCpw: Long, // (PurchasePrice - EstimatedResaleValue) / max(1, wearCount)
-    val estimatedResaleValue: Long,
-    val targetCpw: Long,
-    val targetTotalWears: Long,
-    val remainingWearsToGoal: Long,
+data class GarmentStylingAnalysis(
+    val wearCount: Long,
+    val targetSignatureWears: Long,
+    val remainingWearsToSignature: Long,
     val progressRatio: Float,
     val closetTierLabel: String,
     val compatibleItems: List<Garment>
 )
 
 object AclosetWardrobeAnalyzer {
-    fun analyzeGarmentBreakEven(
+    private const val SIGNATURE_TARGET_WEARS = 15L
+
+    fun analyzeGarmentStyling(
         target: Garment,
         allGarments: List<Garment>,
-        targetCpwGoal: Long = 10_000L
-    ): BreakEvenAnalysis {
-        val safeTargetCpw = targetCpwGoal.coerceAtLeast(1_000L)
-        val neededWears = if (target.purchasePrice <= 0L) 1L
-        else ceil(target.purchasePrice.toDouble() / safeTargetCpw.toDouble()).toLong().coerceAtLeast(1L)
-        val remaining = (neededWears - target.wearCount).coerceAtLeast(0L)
-        val progress = (target.wearCount.toFloat() / neededWears.toFloat()).coerceIn(0f, 1f)
-
-        // Estimated Karrot resale value (starts around 62% when unworn, tapers gently with wear)
-        val retentionFactor = (0.62 - (target.wearCount.coerceAtMost(30L) * 0.012)).coerceIn(0.20, 0.62)
-        val resaleValue = ((target.purchasePrice * retentionFactor) / 1000.0).toLong() * 1000L
-        val netCost = (target.purchasePrice - resaleValue).coerceAtLeast(0L)
-        val netCpw = if (target.wearCount <= 0L) netCost else netCost / target.wearCount
+        targetSignatureWears: Long = SIGNATURE_TARGET_WEARS
+    ): GarmentStylingAnalysis {
+        val safeTargetWears = targetSignatureWears.coerceAtLeast(5L)
+        val remaining = (safeTargetWears - target.wearCount).coerceAtLeast(0L)
+        val progress = (target.wearCount.toFloat() / safeTargetWears.toFloat()).coerceIn(0f, 1f)
 
         val tierLabel = when {
-            target.wearCount >= neededWears -> "🏆 명예의 전당 (손익분기 돌파)"
-            progress >= 0.65f -> "🔥 주력 데일리템 (순항 중)"
+            target.wearCount >= safeTargetWears -> "🏆 시그니처 주력템"
+            progress >= 0.45f -> "🔥 자주 입는 데일리"
             target.wearCount in 1L..2L -> "🌱 워밍업 아이템 (착용 권장)"
-            else -> "💤 잠자는 방치템 (집중 케어 필요)"
+            else -> "💤 잠자는 방치템 (코디 추천)"
         }
 
         val complementaryCategories = when (target.category) {
@@ -72,13 +62,10 @@ object AclosetWardrobeAnalyzer {
             }
             .take(4)
 
-        return BreakEvenAnalysis(
-            currentCpw = target.costPerWear,
-            netEffectiveCpw = netCpw,
-            estimatedResaleValue = resaleValue,
-            targetCpw = safeTargetCpw,
-            targetTotalWears = neededWears,
-            remainingWearsToGoal = remaining,
+        return GarmentStylingAnalysis(
+            wearCount = target.wearCount,
+            targetSignatureWears = safeTargetWears,
+            remainingWearsToSignature = remaining,
             progressRatio = progress,
             closetTierLabel = tierLabel,
             compatibleItems = compatible
@@ -340,42 +327,38 @@ object StylebookCapsuleBuilder {
 }
 
 // ============================================================================
-// 4. Stitch Fix & 무신사 벤치마킹 심층 엔진: '이 옷 살까 말까?' 구매 가치 & 옷장 갭(Gap) 분석
+// 4. 옷장 빈자리(Gap) & 새 스타일 아이템 궁합 매칭 엔진
 // ============================================================================
 
-data class CandidatePurchaseItem(
+data class StyleMatchCandidate(
     val name: String,
     val category: String,
     val colorName: String,
-    val colorHex: String,
-    val expectedPrice: Long
+    val colorHex: String
 )
 
-data class BuyOrNotVerdict(
+data class StyleCompatibilityVerdict(
     val verdictBadge: String,
     val synergyScore: Int, // 0..100
     val wardrobeGapFillScore: Int, // 0..100
     val newOutfitCombinationsCreated: Int,
     val duplicateRiskPercent: Int,
-    val expectedCpwAt5Wears: Long,
-    val expectedCpwAt10Wears: Long,
-    val expectedCpwAt20Wears: Long,
     val topMatchingOwnedGarments: List<Garment>,
     val recommendationSummary: String
 )
 
-object StitchFixPurchaseAdvisor {
+object WardrobeCompatibilityAdvisor {
     val presetCandidates = listOf(
-        CandidatePurchaseItem("시어링 블랙 레더 자켓", "OUTER", "클래식 블랙", "#1C1C1E", 189_000L),
-        CandidatePurchaseItem("크림 와이드 코튼 팬츠", "BOTTOM", "버터 크림", "#F3E5AB", 74_000L),
-        CandidatePurchaseItem("버건디 케이블 가디건", "TOP", "딥 버건디", "#6E2638", 112_000L),
-        CandidatePurchaseItem("화이트 미니멀 스니커즈", "SHOES", "화이트", "#F5F5F0", 139_000L)
+        StyleMatchCandidate("시어링 블랙 레더 자켓", "OUTER", "클래식 블랙", "#1C1C1E"),
+        StyleMatchCandidate("크림 와이드 코튼 팬츠", "BOTTOM", "버터 크림", "#F3E5AB"),
+        StyleMatchCandidate("버건디 케이블 가디건", "TOP", "딥 버건디", "#6E2638"),
+        StyleMatchCandidate("화이트 미니멀 스니커즈", "SHOES", "화이트", "#F5F5F0")
     )
 
-    fun evaluateCandidatePurchase(
-        candidate: CandidatePurchaseItem,
+    fun evaluateStyleCandidate(
+        candidate: StyleMatchCandidate,
         ownedGarments: List<Garment>
-    ): BuyOrNotVerdict {
+    ): StyleCompatibilityVerdict {
         val sameCategoryOwned = ownedGarments.filter { it.category == candidate.category }
         val sameColorAndCat = sameCategoryOwned.count {
             it.colorName.contains(candidate.colorName.take(2)) ||
@@ -409,23 +392,19 @@ object StitchFixPurchaseAdvisor {
             .coerceIn(35, 98)
 
         val verdict = when {
-            synergyScore >= 78 && duplicateRisk <= 35 -> "✅ 적극 구매 추천 (옷장 빈자리 해결 · 시너지 ${synergyScore}점)"
-            synergyScore >= 60 && duplicateRisk <= 58 -> "💡 조건부 추천 (포인트 코디 확장 · 시너지 ${synergyScore}점)"
-            else -> "⚠️ 중복 구매 주의 (유사 색상·카테고리 보유 · 중복도 ${duplicateRisk}%)"
+            synergyScore >= 78 && duplicateRisk <= 35 -> "✅ 찰떡 스타일 매치 (옷장 빈자리 해결 · 시너지 ${synergyScore}점)"
+            synergyScore >= 60 && duplicateRisk <= 58 -> "💡 포인트 코디 확장 (스타일 확장 · 시너지 ${synergyScore}점)"
+            else -> "⚠️ 스타일 중복 주의 (유사 색상·카테고리 보유 · 중복도 ${duplicateRisk}%)"
         }
 
-        val safePrice = candidate.expectedPrice.coerceAtLeast(1000L)
         val summary = "현재 옷장과 결합 시 즉시 ${newCombos}가지 신규 코디가 탄생하며, 옷장 부족 영역 보완 지수는 ${gapFillScore}점(중복 위험도 ${duplicateRisk}%)입니다."
 
-        return BuyOrNotVerdict(
+        return StyleCompatibilityVerdict(
             verdictBadge = verdict,
             synergyScore = synergyScore,
             wardrobeGapFillScore = gapFillScore,
             newOutfitCombinationsCreated = newCombos,
             duplicateRiskPercent = duplicateRisk,
-            expectedCpwAt5Wears = safePrice / 5L,
-            expectedCpwAt10Wears = safePrice / 10L,
-            expectedCpwAt20Wears = safePrice / 20L,
             topMatchingOwnedGarments = matchingOwned.take(3),
             recommendationSummary = summary
         )

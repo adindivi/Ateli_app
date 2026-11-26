@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -59,7 +58,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.data.model.BodyShapeType
@@ -82,7 +80,6 @@ fun AclosetQuickAddBottomSheet(
     var selectedColorPair by remember { mutableStateOf("네이비" to "#1F2A44") }
     var selectedSeason by remember { mutableStateOf("ALL") }
     var selectedThickness by remember { mutableStateOf("MEDIUM") }
-    var priceText by remember { mutableStateOf("59000") }
 
     val colorChips = listOf(
         "블랙" to "#1E1E22",
@@ -113,14 +110,9 @@ fun AclosetQuickAddBottomSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "⚡ 에이클로젯 5초 초고속 의류 등록",
+                text = "빠른 옷 등록",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold
-            )
-            Text(
-                text = "영수증이나 사진 없이도 집에 있는 옷을 카테고리·색상 칩 터치만으로 즉시 옷장에 추가합니다.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -139,27 +131,15 @@ fun AclosetQuickAddBottomSheet(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("의류 이름 (예: 캐시미어 니트)") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .weight(1.2f)
-                        .testTag("quick_add_name_input")
-                )
-                OutlinedTextField(
-                    value = priceText,
-                    onValueChange = { priceText = it.filter { ch -> ch.isDigit() } },
-                    label = { Text("구매가(원)") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier
-                        .weight(0.8f)
-                        .testTag("quick_add_price_input")
-                )
-            }
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("의류 이름 (예: 캐시미어 니트)") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("quick_add_name_input")
+            )
 
             Text(
                 text = "대표 색상 선택",
@@ -197,7 +177,14 @@ fun AclosetQuickAddBottomSheet(
                     FilterChip(
                         selected = selectedThickness == code,
                         onClick = { selectedThickness = code },
-                        label = { Text("두께: $label", style = MaterialTheme.typography.labelSmall) }
+                        label = {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
                     )
                 }
             }
@@ -225,7 +212,6 @@ fun AclosetQuickAddBottomSheet(
                             thickness = selectedThickness,
                             waterResistant = selectedCategory == "OUTER",
                             tpoTags = listOf("출근", "데일리", "데이트"),
-                            purchasePrice = priceText.toLongOrNull() ?: 59000L,
                             wearCount = 1L,
                             sourceType = "QUICK_MANUAL",
                             receiptStore = "5초 퀵 등록"
@@ -238,7 +224,7 @@ fun AclosetQuickAddBottomSheet(
                     .fillMaxWidth()
                     .testTag("quick_add_submit_button")
             ) {
-                Text("옷장에 즉시 추가하기", fontWeight = FontWeight.Bold, color = ZigzagCtaText)
+                Text("옷장에 추가", fontWeight = FontWeight.Bold, color = ZigzagCtaText)
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -254,7 +240,7 @@ fun AclosetGarmentDetailModal(
     onWearPlusOne: (Garment) -> Unit
 ) {
     val analysis = remember(garment, allGarments) {
-        AclosetWardrobeAnalyzer.analyzeGarmentBreakEven(garment, allGarments, targetCpwGoal = 10_000L)
+        AclosetWardrobeAnalyzer.analyzeGarmentStyling(garment, allGarments)
     }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -323,7 +309,7 @@ fun AclosetGarmentDetailModal(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "💰 에이클로젯 감가상각 & 순수 체감 CPW 분석",
+                        text = "✨ 착용 활용도 & 스타일 프로필",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -332,26 +318,26 @@ fun AclosetGarmentDetailModal(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("명목 1회 착용가", style = MaterialTheme.typography.labelSmall)
+                            Text("누적 착용", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                "${String.format("%,d", analysis.currentCpw)}원",
+                                "${analysis.wearCount}회",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                         Column {
-                            Text("당근 예상 중고가", style = MaterialTheme.typography.labelSmall)
+                            Text("매칭 호환", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                "${String.format("%,d", analysis.estimatedResaleValue)}원",
+                                "${analysis.compatibleItems.size}개 추천 코디",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
                         Column {
-                            Text("실질 체감 CPW", style = MaterialTheme.typography.labelSmall)
+                            Text("추천 TPO", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                "${String.format("%,d", analysis.netEffectiveCpw)}원",
+                                garment.tpoTags.take(2).joinToString(" · ").ifBlank { "데일리" },
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.tertiary
@@ -366,10 +352,10 @@ fun AclosetGarmentDetailModal(
                             .clip(RoundedCornerShape(4.dp))
                     )
                     Text(
-                        text = if (analysis.remainingWearsToGoal == 0L) {
-                            "🎉 목표 손익분기(${analysis.targetTotalWears}회 착용)를 이미 달성한 효자 아이템입니다!"
+                        text = if (analysis.remainingWearsToSignature == 0L) {
+                            "🏆 시그니처 달성 (${analysis.targetSignatureWears}회)"
                         } else {
-                            "목표 CPW(10,000원) 달성까지 앞으로 ${analysis.remainingWearsToGoal}회 더 입으면 뽕을 뽑습니다!"
+                            "시그니처까지 ${analysis.remainingWearsToSignature}회"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold
@@ -379,7 +365,7 @@ fun AclosetGarmentDetailModal(
 
             if (analysis.compatibleItems.isNotEmpty()) {
                 Text(
-                    text = "✨ 이 옷과 가장 잘 어울리는 내 옷장 크로스 코디 Top ${analysis.compatibleItems.size}",
+                    text = "✨ 추천 크로스 코디",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.ExtraBold
                 )
@@ -431,7 +417,7 @@ fun AclosetGarmentDetailModal(
                     .fillMaxWidth()
                     .testTag("detail_modal_wear_plus_button")
             ) {
-                Text("오늘 이 옷 입기 (+1회 착용 기록)", fontWeight = FontWeight.Bold, color = ZigzagCtaText)
+                Text("오늘 입기 (+1)", fontWeight = FontWeight.Bold, color = ZigzagCtaText)
             }
             Spacer(modifier = Modifier.height(14.dp))
         }
@@ -489,26 +475,45 @@ fun WheringDressMeSlotBar(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "🎰 Whering 'Dress Me' 슬롯머신 & 색채학 매칭",
+                        text = "스타일 슬롯 믹스",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.ExtraBold
                     )
-                    Text(
-                        text = "${harmony.harmonyTypeKo} · 색채 ${harmony.colorScore}점 / 실루엣 ${harmony.silhouetteScore}점",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        harmony.paletteHexes.distinct().take(4).forEach { hex ->
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(parseHexColorSafe(hex))
+                            )
+                        }
+                        Text(
+                            text = "${harmony.harmonyTypeKo.substringBefore(" (")} · 색채 ${harmony.colorScore} · 실루엣 ${harmony.silhouetteScore}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.width(8.dp))
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Text(
-                        text = "종합 ${harmony.totalHarmonyScore}점",
+                        text = "${harmony.totalHarmonyScore}점",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1,
+                        softWrap = false,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
@@ -554,12 +559,6 @@ fun WheringDressMeSlotBar(
                 )
             }
 
-            Text(
-                text = "🎨 ${harmony.styleFeedbackKo}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
             Button(
                 onClick = onSpinUnlockedSlots,
                 colors = ButtonDefaults.buttonColors(containerColor = ZigzagCtaBlack, contentColor = ZigzagCtaText),
@@ -567,7 +566,7 @@ fun WheringDressMeSlotBar(
                     .fillMaxWidth()
                     .testTag("whering_spin_unlocked_button")
             ) {
-                Text("잠금 제외 슬롯 랜덤 스핀", fontWeight = FontWeight.Bold, color = ZigzagCtaText)
+                Text("랜덤 코디 스핀", fontWeight = FontWeight.Bold, color = ZigzagCtaText)
             }
         }
     }
@@ -667,7 +666,7 @@ private fun SlotMachineRow(
 }
 
 // ============================================================================
-// 3. Stylebook (스타일북) 벤치마킹 UI: 스마트 여행·출장 패킹 캡슐 & 손익분기 트래커
+// 3. Stylebook 벤치마킹 UI: 스마트 여행·출장 패킹 캡슐 & 시그니처 착용 트래커
 // ============================================================================
 
 @Composable
@@ -707,30 +706,55 @@ fun StylebookPackingCapsuleCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "스마트 패킹 캡슐 플래너",
+                        text = "스마트 패킹 캡슐",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "최소 짐으로 최대 코디 조합 · 캐리어 무게 ${capsulePlan.estimatedTotalWeightKg}kg · 부피 ${capsulePlan.spaceSavedPercent}% 절감",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(
+                            "${capsulePlan.packedItems.size}벌",
+                            "${capsulePlan.possibleOutfitCombinationsCount}코디",
+                            "${capsulePlan.estimatedTotalWeightKg}kg · -${capsulePlan.spaceSavedPercent}%"
+                        ).forEach { badge ->
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            ) {
+                                Text(
+                                    text = badge,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 listOf(2 to "1박 2일", 3 to "2박 3일", 4 to "3박 4일").forEach { (days, label) ->
                     FilterChip(
                         selected = tripDays == days,
                         onClick = { tripDays = days },
-                        label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                        label = {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        },
                         modifier = Modifier.testTag("packing_days_$days")
                     )
                 }
@@ -738,7 +762,14 @@ fun StylebookPackingCapsuleCard(
                     FilterChip(
                         selected = tripPurpose == purpose,
                         onClick = { tripPurpose = purpose },
-                        label = { Text(purpose, style = MaterialTheme.typography.labelSmall) }
+                        label = {
+                            Text(
+                                text = purpose,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
                     )
                 }
             }
@@ -749,16 +780,12 @@ fun StylebookPackingCapsuleCard(
             ) {
                 Column(
                     modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "📦 ${capsulePlan.tripLabel} 추천 패킹: 단 ${capsulePlan.packedItems.size}벌로 ${capsulePlan.possibleOutfitCombinationsCount}가지 코디 완성",
+                        text = "📦 ${capsulePlan.tripLabel} · ${capsulePlan.weatherPackingTip}",
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                    Text(
-                        text = capsulePlan.weatherPackingTip,
-                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
@@ -806,7 +833,9 @@ fun StylebookPackingCapsuleCard(
                     Text(
                         text = "• $dayLine",
                         style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -815,21 +844,21 @@ fun StylebookPackingCapsuleCard(
 }
 
 @Composable
-fun StylebookBreakEvenTrackerCard(
+fun StylebookSignatureWearTrackerCard(
     garments: List<Garment>,
     onWearPlusOne: (Garment) -> Unit
 ) {
-    var targetCpwGoal by remember { mutableLongStateOf(10_000L) }
-    val analyses = remember(garments, targetCpwGoal) {
+    var targetWearsGoal by remember { mutableLongStateOf(15L) }
+    val analyses = remember(garments, targetWearsGoal) {
         garments.map { g ->
-            g to AclosetWardrobeAnalyzer.analyzeGarmentBreakEven(g, garments, targetCpwGoal)
-        }.sortedByDescending { (_, a) -> a.remainingWearsToGoal }
+            g to AclosetWardrobeAnalyzer.analyzeGarmentStyling(g, garments, targetWearsGoal)
+        }.sortedByDescending { (_, a) -> a.remainingWearsToSignature }
     }
 
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag("stylebook_breakeven_tracker_card"),
+            .testTag("stylebook_signature_wear_tracker_card"),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -843,22 +872,22 @@ fun StylebookBreakEvenTrackerCard(
         ) {
             Column {
                 Text(
-                    text = "본전 뽑기 트래커",
+                    text = "시그니처 애착템 트래커",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "몇 번 더 입으면 본전인지 알려드려요.",
+                    text = "자주 입는 내 시그니처 옷장 목표를 채워보세요.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf(5_000L to "목표 5천원", 10_000L to "목표 1만원", 20_000L to "목표 2만원").forEach { (goal, label) ->
+                listOf(10L to "목표 10회", 15L to "목표 15회", 30L to "목표 30회").forEach { (goal, label) ->
                     FilterChip(
-                        selected = targetCpwGoal == goal,
-                        onClick = { targetCpwGoal = goal },
+                        selected = targetWearsGoal == goal,
+                        onClick = { targetWearsGoal = goal },
                         label = { Text(label, style = MaterialTheme.typography.labelSmall) }
                     )
                 }
@@ -888,7 +917,7 @@ fun StylebookBreakEvenTrackerCard(
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = "한 번 입을 때 ${String.format("%,d", a.currentCpw)}원 (중고로 팔면 약 ${String.format("%,d", a.estimatedResaleValue)}원)",
+                                    text = "${g.brand} · ${g.colorName} (${a.compatibleItems.size}벌과 코디 매치)",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -908,10 +937,10 @@ fun StylebookBreakEvenTrackerCard(
                                 .clip(RoundedCornerShape(3.dp))
                         )
                         Text(
-                            text = if (a.remainingWearsToGoal == 0L) {
-                                "✅ 본전 뽑았어요! (${g.wearCount}/${a.targetTotalWears}번 입음)"
+                            text = if (a.remainingWearsToSignature == 0L) {
+                                "✅ 시그니처 주력템 달성! (${g.wearCount}/${a.targetSignatureWears}번 착용)"
                             } else {
-                                "현재 ${g.wearCount}번 입음 · ${a.remainingWearsToGoal}번 더 입으면 본전이에요!"
+                                "현재 ${g.wearCount}번 입음 · 시그니처까지 ${a.remainingWearsToSignature}번 남았어요!"
                             },
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
@@ -925,30 +954,29 @@ fun StylebookBreakEvenTrackerCard(
 }
 
 // ============================================================================
-// 4. Stitch Fix & 무신사 벤치마킹 UI: '이 옷 살까 말까?' 구매 전 옷장 궁합 시뮬레이터
+// 4. 새 스타일 아이템 옷장 궁합 시뮬레이터 UI
 // ============================================================================
 
 @Composable
-fun StitchFixBuyOrNotSimulatorCard(
+fun WardrobeCompatibilitySimulatorCard(
     ownedGarments: List<Garment>,
     onAskAiStylist: (String) -> Unit
 ) {
     var selectedCandidate by remember {
-        mutableStateOf(StitchFixPurchaseAdvisor.presetCandidates.first())
+        mutableStateOf(WardrobeCompatibilityAdvisor.presetCandidates.first())
     }
     var showCustomInput by remember { mutableStateOf(false) }
     var customName by remember { mutableStateOf("") }
     var customCategory by remember { mutableStateOf("OUTER") }
-    var customPriceText by remember { mutableStateOf("129000") }
 
     val verdict = remember(selectedCandidate, ownedGarments) {
-        StitchFixPurchaseAdvisor.evaluateCandidatePurchase(selectedCandidate, ownedGarments)
+        WardrobeCompatibilityAdvisor.evaluateStyleCandidate(selectedCandidate, ownedGarments)
     }
 
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag("stitchfix_buy_or_not_card"),
+            .testTag("wardrobe_compatibility_simulator_card"),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -967,12 +995,12 @@ fun StitchFixBuyOrNotSimulatorCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "이 옷 살까요 말까요?",
+                        text = "새 스타일 아이템 궁합 시뮬레이터",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "사기 전에 내 옷들과 잘 어울릴지 미리 봐요.",
+                        text = "내 옷들과 얼마나 잘 어우러지는지 코디 확장을 미리 봐요.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1003,34 +1031,20 @@ fun StitchFixBuyOrNotSimulatorCard(
                                 )
                             }
                         }
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedTextField(
-                                value = customName,
-                                onValueChange = { customName = it },
-                                label = { Text("고민 중인 상품명") },
-                                singleLine = true,
-                                modifier = Modifier.weight(1.1f)
-                            )
-                            OutlinedTextField(
-                                value = customPriceText,
-                                onValueChange = { customPriceText = it.filter { ch -> ch.isDigit() } },
-                                label = { Text("가격(원)") },
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.weight(0.9f)
-                            )
-                        }
+                        OutlinedTextField(
+                            value = customName,
+                            onValueChange = { customName = it },
+                            label = { Text("테스트할 스타일 아이템명") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         Button(
                             onClick = {
-                                selectedCandidate = CandidatePurchaseItem(
-                                    name = customName.ifBlank { "고민 중인 신상 아이템" },
+                                selectedCandidate = StyleMatchCandidate(
+                                    name = customName.ifBlank { "고민 중인 스타일 아이템" },
                                     category = customCategory,
                                     colorName = "네이비/블랙",
-                                    colorHex = "#2C3E50",
-                                    expectedPrice = customPriceText.toLongOrNull() ?: 129_000L
+                                    colorHex = "#2C3E50"
                                 )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = ZigzagCtaBlack, contentColor = ZigzagCtaText),
@@ -1047,13 +1061,13 @@ fun StitchFixBuyOrNotSimulatorCard(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    StitchFixPurchaseAdvisor.presetCandidates.forEach { candidate ->
+                    WardrobeCompatibilityAdvisor.presetCandidates.forEach { candidate ->
                         FilterChip(
                             selected = selectedCandidate.name == candidate.name,
                             onClick = { selectedCandidate = candidate },
                             label = {
                                 Text(
-                                    "${candidate.name} (${String.format("%,d", candidate.expectedPrice)}원)",
+                                    "${candidate.name} (${candidate.colorName})",
                                     style = MaterialTheme.typography.labelSmall
                                 )
                             }
@@ -1104,9 +1118,9 @@ fun StitchFixBuyOrNotSimulatorCard(
                             )
                         }
                         Column {
-                            Text("10번 입으면 한 번에", style = MaterialTheme.typography.labelSmall)
+                            Text("스타일 중복도", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                "${String.format("%,d", verdict.expectedCpwAt10Wears)}원",
+                                "${verdict.duplicateRiskPercent}%",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.tertiary
@@ -1127,7 +1141,7 @@ fun StitchFixBuyOrNotSimulatorCard(
 
             Button(
                 onClick = {
-                    val prompt = "'${selectedCandidate.name}'(${String.format("%,d", selectedCandidate.expectedPrice)}원, ${selectedCandidate.colorName}) 구매를 고민 중입니다. 내 옷장 아이템들과 매칭했을 때 살 가치가 있는지, 어떤 보유 아이템과 입으면 좋을지 분석해 주세요!"
+                    val prompt = "'${selectedCandidate.name}'(${selectedCandidate.colorName}) 아이템과 내 옷장의 기존 옷들이 어떻게 어울리는지 코디 조합을 추천해 주세요!"
                     onAskAiStylist(prompt)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = ZigzagCtaBlack, contentColor = ZigzagCtaText),

@@ -84,23 +84,11 @@ fun CapsuleWardrobeReportSheet(
             ) {
                 Column {
                     Text(
-                        text = "캡슐 옷장 결핍(Gap) 리포트",
+                        text = "캡슐 옷장 리포트",
                         style = TextStyle(
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = ZigzagStrong,
-                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
-                        ),
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "적은 옷으로 최대의 코디를 만드는 스마트 쇼핑 알고리즘",
-                        style = TextStyle(
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = ZigzagMuted,
                             platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
                         ),
                         maxLines = 1,
@@ -167,7 +155,7 @@ fun CapsuleWardrobeReportSheet(
                             color = Color(0xFF0071E3).copy(alpha = 0.1f)
                         ) {
                             Text(
-                                text = "총 ${report.possibleOutfitsCount}가지 룩 조합 가능",
+                                text = "${report.possibleOutfitsCount}가지 코디",
                                 style = TextStyle(
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
@@ -252,7 +240,7 @@ fun CapsuleWardrobeReportSheet(
                             color = Color(0xFF0071E3)
                         ) {
                             Text(
-                                text = "가장 필요한 1벌 (Gap)",
+                                text = "추천 1벌",
                                 style = TextStyle(
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
@@ -295,7 +283,7 @@ fun CapsuleWardrobeReportSheet(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = report.roiAdvice,
+                        text = report.stylingAdvice,
                         style = TextStyle(
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.Normal,
@@ -330,7 +318,7 @@ fun CapsuleWardrobeReportSheet(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "이 아이템 위시리스트에 담기",
+                            text = "위시리스트 담기",
                             style = TextStyle(
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,

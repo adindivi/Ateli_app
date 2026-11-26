@@ -109,7 +109,6 @@ class AteliViewModel(
                             items = Schema.string(),
                             description = "2 to 4 TPO tags in Korean such as 출근, 데이트, 하객룩, 운동, 주말 나들이"
                         ),
-                        "purchasePrice" to Schema.integer(description = "Price in KRW integer"),
                         "receiptStore" to Schema.string(description = "Store name e.g. 무신사, 29CM, W컨셉")
                     )
                 ),
@@ -239,7 +238,7 @@ class AteliViewModel(
 
     private val defaultGreetingMessage = ChatMessage(
         id = "welcome_msg",
-        text = "안녕하세요! 오늘 어떤 옷 입을지 같이 골라볼까요? 날씨나 체형에 맞는 코디부터 옷장 정리까지 편하게 물어보세요 :)",
+        text = "오늘 뭐 입을지 편하게 물어보세요 :)",
         isUser = false,
         modelBadge = "AI 코디"
     )
@@ -473,10 +472,9 @@ class AteliViewModel(
             if (idx >= 0) {
                 val current = list[idx]
                 val newCount = current.wearCount + 1L
-                val newCpw = current.purchasePrice / newCount
                 list[idx] = current.copy(wearCount = newCount)
                 _guestGarments.value = list
-                _statusBannerMessage.value = "'${garment.name}' 착용 +1회 기록! (현재 CPW: ${String.format("%,d", newCpw)}원)"
+                _statusBannerMessage.value = "'${garment.name}' 착용 ${newCount}회로 기록되었어요!"
             }
             return
         }
@@ -484,8 +482,7 @@ class AteliViewModel(
             repository.incrementWearCount(garment.id, garment.wearCount)
                 .onSuccess {
                     val newCount = garment.wearCount + 1L
-                    val newCpw = garment.purchasePrice / newCount
-                    _statusBannerMessage.value = "'${garment.name}' 착용 +1회 기록! (현재 CPW: ${String.format("%,d", newCpw)}원)"
+                    _statusBannerMessage.value = "'${garment.name}' 착용 ${newCount}회로 기록되었어요!"
                 }
         }
     }
@@ -601,20 +598,20 @@ class AteliViewModel(
     }
 
     /**
-     * 2.1 [자동 등록] 전자 영수증 / 쇼핑몰 주문 내역 AI 파싱 및 옷장 자동 등록
+     * 2.1 [자동 등록] 전자 주문내역 / 영수증 AI 파싱 및 옷장 자동 등록
      */
     fun parseReceiptAndRegister(receiptText: String) {
         if (receiptText.isBlank()) return
         viewModelScope.launch {
-            _aiRegistrationState.value = AiTaskState.Loading("AI가 영수증 내역에서 브랜드·가격·소재·TPO 태그를 추출 중입니다...")
+            _aiRegistrationState.value = AiTaskState.Loading("AI가 주문 내역에서 브랜드·색상·소재·TPO 태그를 추출 중입니다...")
             try {
                 val prompt = """
-                    다음 쇼핑몰 결제 영수증 또는 이메일 주문 내역을 분석하여 각 의류 아이템의 메타데이터를 추출하세요.
+                    다음 쇼핑몰 주문 확인 또는 이메일 내역을 분석하여 각 의류 아이템의 메타데이터를 추출하세요.
                     - 색상은 실제 의류 색상에 맞는 자연스러운 한국어 색상명(colorName)과 헥스 코드(colorHex, 예: #D2B48C, #1F2A44, #F5F5F0)로 지정하세요.
                     - 카테고리(category)는 OUTER, TOP, BOTTOM, SHOES, BAG 중 하나로 분류하세요.
                     - TPO 태그(tpoTags)는 출근, 데이트, 하객룩, 운동, 주말 나들이, 발표 중 어울리는 2~3개를 배열로 넣으세요.
                     
-                    [영수증 원문]
+                    [주문 원문]
                     $receiptText
                 """.trimIndent()
 
@@ -624,7 +621,7 @@ class AteliViewModel(
                 val jsonString = response.text ?: throw IllegalStateException("AI 응답이 비어 있습니다.")
                 val parsedGarments = parseGarmentsFromJson(jsonString, sourceType = "RECEIPT_AUTO")
                 if (parsedGarments.isEmpty()) {
-                    _aiRegistrationState.value = AiTaskState.Error("영수증에서 의류 항목을 찾지 못했습니다.")
+                    _aiRegistrationState.value = AiTaskState.Error("내역에서 의류 항목을 찾지 못했습니다.")
                     return@launch
                 }
 
@@ -635,15 +632,15 @@ class AteliViewModel(
                     savedList.add(g.copy(id = id))
                 }
                 _aiRegistrationState.value = AiTaskState.Success(savedList)
-                _statusBannerMessage.value = "영수증에서 총 ${savedList.size}벌의 의류가 옷장에 자동 등록되었습니다!"
+                _statusBannerMessage.value = "총 ${savedList.size}벌의 의류가 옷장에 자동 등록되었습니다!"
             } catch (e: TimeoutCancellationException) {
                 Log.e(TAG, "Receipt AI parsing timed out", e)
-                _aiRegistrationState.value = AiTaskState.Error("AI 영수증 분석 시간이 초과되었습니다 (60초). 다시 시도해 주세요.")
+                _aiRegistrationState.value = AiTaskState.Error("AI 주문 내역 분석 시간이 초과되었습니다 (60초). 다시 시도해 주세요.")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Receipt AI parsing failed", e)
-                _aiRegistrationState.value = AiTaskState.Error(e.localizedMessage ?: "AI 영수증 파싱 중 오류가 발생했습니다.")
+                _aiRegistrationState.value = AiTaskState.Error(e.localizedMessage ?: "AI 주문 내역 파싱 중 오류가 발생했습니다.")
             }
         }
     }
@@ -653,7 +650,6 @@ class AteliViewModel(
      */
     fun processGarmentPhotoAndRegister(
         originalBitmap: Bitmap,
-        enteredPrice: Long,
         enteredBrand: String
     ) {
         viewModelScope.launch {
@@ -669,8 +665,8 @@ class AteliViewModel(
 
                 // Step 2: Multimodal Gemini 3.8 Flash analysis
                 val prompt = """
-                    이 의류(또는 영수증/착장) 이미지를 분석하여 옷장에 등록할 의류 메타데이터를 추출하세요.
-                    사용자가 입력한 브랜드 참고값: '${enteredBrand.ifBlank { "자동 감지" }}', 구매가 참고값: ${enteredPrice}원.
+                    이 의류 이미지를 분석하여 옷장에 등록할 의류 메타데이터를 추출하세요.
+                    사용자가 입력한 브랜드 참고값: '${enteredBrand.ifBlank { "자동 감지" }}'.
                     가장 중심이 되는 의류 아이템(최대 2개)의 이름, 카테고리(OUTER/TOP/BOTTOM/SHOES/BAG), 상세 분류, 색상명, 정확한 HEX 색상코드(#RRGGBB), 계절감, 패턴, 두께감, 방수 여부, TPO 태그를 JSON 스키마에 맞춰 반환하세요.
                 """.trimIndent()
 
@@ -687,7 +683,6 @@ class AteliViewModel(
                 val parsedGarments = parseGarmentsFromJson(
                     jsonString = jsonString,
                     sourceType = "CAMERA_AI",
-                    overridePrice = enteredPrice.takeIf { it > 0L },
                     overrideBrand = enteredBrand.takeIf { it.isNotBlank() }
                 )
 
@@ -741,7 +736,7 @@ class AteliViewModel(
                 val weatherMatched = WeatherWardrobeMatcher.evaluateWardrobeForWeather(garments, weather)
                 val catalogText = weatherMatched.allRankedGarments.joinToString("\n") { m ->
                     val g = m.garment
-                    "- ID: ${g.id} | 날씨적합도: ${m.suitabilityScore}% (${m.matchReasons.joinToString(", ")}) | 카테고리: ${g.category} (${g.subCategory}) | 이름: ${g.name} | 색상: ${g.colorName}(${g.colorHex}) | 두께: ${g.thickness} | 계절: ${g.season} | 방수: ${g.waterResistant} | TPO: ${g.tpoTags.joinToString(",")} | 착용횟수: ${g.wearCount}회 (CPW ${g.costPerWear}원)"
+                    "- ID: ${g.id} | 날씨적합도: ${m.suitabilityScore}% (${m.matchReasons.joinToString(", ")}) | 카테고리: ${g.category} (${g.subCategory}) | 이름: ${g.name} | 색상: ${g.colorName}(${g.colorHex}) | 두께: ${g.thickness} | 계절: ${g.season} | 방수: ${g.waterResistant} | TPO: ${g.tpoTags.joinToString(",")} | 착용횟수: ${g.wearCount}회"
                 }
 
                 val prompt = """
@@ -766,7 +761,7 @@ class AteliViewModel(
                     
                     주의사항:
                     1. outerId, topId, bottomId, shoesId에는 반드시 위 목록에 존재하는 실제 ID를 넣으세요. (날씨가 더워 아우터가 불필요하면 outerId는 빈 문자열 ""로 반환)
-                    2. 가성비(CPW)를 높이기 위해 너무 방치된 옷이나 해당 TPO에 찰떡인 아이템을 적극 활용하세요.
+                    2. 옷장 활용도를 높이기 위해 덜 입었던 옷이나 해당 TPO에 찰떡인 아이템을 우선 조합하세요.
                 """.trimIndent()
 
                 val response = withTimeout(60_000L) {
@@ -859,13 +854,13 @@ class AteliViewModel(
                     "현재 등록된 의류 없음"
                 } else {
                     garments.joinToString("\n") { g ->
-                        "- [${g.category}/${g.subCategory}] ${g.brand} ${g.name} (${g.colorName}, 구매가 ${g.purchasePrice}원, 착용 ${g.wearCount}회, CPW ${g.costPerWear}원, TPO: ${g.tpoTags.joinToString(",")})"
+                        "- [${g.category}/${g.subCategory}] ${g.brand} ${g.name} (${g.colorName}, 착용 ${g.wearCount}회, TPO: ${g.tpoTags.joinToString(",")})"
                     }
                 }
 
                 val systemPrompt = """
                     당신은 'Ateli (아틀리에)'의 수석 AI 퍼스널 스타일리스트입니다.
-                    항상 친절하고 전문적인 한국어로 답변하며, 사용자의 실제 옷장 아이템, 체형 특성, 실시간 날씨, 그리고 CPW(1회 착용당 비용) 데이터를 근거로 구체적인 스타일링 조언을 제공하세요.
+                    항상 친절하고 전문적인 한국어로 답변하며, 사용자의 실제 옷장 아이템, 체형 특성, 퍼스널컬러, 실시간 날씨, 착용 이력을 근거로 구체적인 스타일링 조언을 제공하세요.
                     
                     [사용자 프로필 및 체형]
                     - 이름: ${profile.displayName}, 키: ${profile.heightCm}cm, 몸무게: ${profile.weightKg}kg, 어깨: ${profile.shoulderWidthCm}cm, 허리: ${profile.waistCm}cm
@@ -875,7 +870,7 @@ class AteliViewModel(
                     [실시간 날씨]
                     - ${weather.summaryText} (권장 두께: ${weather.recommendedThickness.joinToString("/")})
                     
-                    [사용자 보유 옷장 및 가성비 현황]
+                    [사용자 보유 옷장 및 착용 현황]
                     $wardrobeSummary
                 """.trimIndent()
 
@@ -938,7 +933,6 @@ class AteliViewModel(
     private fun parseGarmentsFromJson(
         jsonString: String,
         sourceType: String,
-        overridePrice: Long? = null,
         overrideBrand: String? = null
     ): List<Garment> {
         val root = JSONObject(jsonString)
@@ -973,7 +967,6 @@ class AteliViewModel(
                     thickness = obj.optString("thickness", "MEDIUM"),
                     waterResistant = obj.optBoolean("waterResistant", false),
                     tpoTags = tags.ifEmpty { listOf("데일리", "출근") },
-                    purchasePrice = overridePrice ?: obj.optLong("purchasePrice", 59000L).coerceAtLeast(0L),
                     wearCount = 0L,
                     sourceType = sourceType,
                     receiptStore = obj.optString("receiptStore", "AI 자동등록")

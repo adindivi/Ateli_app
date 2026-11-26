@@ -100,7 +100,6 @@ import com.example.ui.theme.ZigzagSecondary
 import com.example.ui.theme.ZigzagCtaText
 import com.example.ui.theme.ZigzagCtaBlack
 import com.example.util.LocationUtils
-import com.example.util.toFormattedGps
 import com.example.viewmodel.AiRecommendedCoordi
 import com.example.viewmodel.AiTaskState
 import com.example.viewmodel.DataUiState
@@ -132,7 +131,7 @@ fun TpoStylingScreen(
     val savedOutfits = (savedOutfitsState as? DataUiState.Success)?.data ?: emptyList()
 
     var selectedTpo by remember { mutableStateOf("출근") }
-    var scheduleNote by remember { mutableStateOf("오전 10시 팀 주간회의 및 오후 클라이언트 미팅") }
+    var scheduleNote by remember { mutableStateOf("") }
     var selectedWeatherCategoryFilter by remember { mutableStateOf("ALL") }
     var locationStatusHint by remember { mutableStateOf<String?>(null) }
 
@@ -154,13 +153,13 @@ fun TpoStylingScreen(
             val loc = LocationUtils.getBestLastKnownLocation(context)
             if (loc != null) {
                 val label = LocationUtils.resolveKoreanDistrictLabel(context, loc.latitude, loc.longitude)
-                locationStatusHint = "📍 GPS 좌표 (${loc.latitude.toFormattedGps()}, ${loc.longitude.toFormattedGps()}) 기상 연동 완료"
+                locationStatusHint = "📍 $label 기상 연동"
                 onRefreshWeatherByLocation(loc.latitude, loc.longitude, label)
             } else {
                 // Default to Seoul City Hall coordinates if emulator has no cached GPS fix yet
                 val defaultLat = 37.5665
                 val defaultLon = 126.9780
-                locationStatusHint = "📍 현재 기기 위치(서울 중구 기준 ${defaultLat}, ${defaultLon}) 기상 데이터를 불러왔습니다."
+                locationStatusHint = "📍 서울 중구 기준 기상 적용"
                 onRefreshWeatherByLocation(defaultLat, defaultLon, "서울 중구")
             }
         }
@@ -174,18 +173,18 @@ fun TpoStylingScreen(
         if (granted) {
             fetchCurrentDeviceLocation()
         } else {
-            locationStatusHint = "위치 권한이 거부되어 선택된 도시(${weather.cityLabelKo}) 날씨를 기준으로 의류를 추천합니다."
+            locationStatusHint = "${weather.cityLabelKo} 날씨 기준 적용"
             onRefreshWeather(weather.cityId)
         }
     }
 
     val tpoKeywords = listOf(
-        "출근" to "오전 10시 팀 주간회의 및 오후 클라이언트 미팅",
-        "데이트" to "성수동 전시회 관람 후 루프탑 저녁 식사",
-        "하객룩" to "주말 호텔 웨딩홀 지인 결혼식 참석",
-        "운동" to "한강 공원 러닝 및 애슬레저 산책",
-        "발표" to "임원진 대상 분기 성과 프레젠테이션 발표",
-        "주말 나들이" to "근교 브런치 카페 및 야외 피크닉"
+        "출근" to "팀 미팅 · 오피스",
+        "데이트" to "전시회 · 저녁 식사",
+        "하객룩" to "주말 결혼식 참석",
+        "운동" to "러닝 · 산책",
+        "발표" to "프레젠테이션 미팅",
+        "주말 나들이" to "브런치 · 야외 산책"
     )
 
     Box(
@@ -247,13 +246,15 @@ fun TpoStylingScreen(
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Text(
-                                text = "체감 ${weather.apparentTempC.toInt()}° (최저 ${weather.minTempC.toInt()}°/최고 ${weather.maxTempC.toInt()}°)",
+                                text = "체감 ${weather.apparentTempC.toInt()}° · ${weather.minTempC.toInt()}°/${weather.maxTempC.toInt()}°",
                                 style = TextStyle(
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = ZigzagSecondary,
                                     platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false)
                                 ),
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
@@ -426,12 +427,14 @@ fun TpoStylingScreen(
                                 selectedTpo = keyword
                                 scheduleNote = sampleSchedule
                             },
-                            shape = RoundedCornerShape(24.dp), // ZIGZAG pill
+                            shape = RoundedCornerShape(24.dp),
                             label = {
                                 Text(
                                     text = "#$keyword",
                                     style = if (selected) com.example.ui.theme.ZigzagTabSelected.copy(fontSize = 13.sp) else com.example.ui.theme.ZigzagMetadata.copy(fontSize = 13.sp),
-                                    color = if (selected) ZigzagCtaText else ZigzagSecondary
+                                    color = if (selected) ZigzagCtaText else ZigzagSecondary,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
@@ -455,9 +458,9 @@ fun TpoStylingScreen(
                 OutlinedTextField(
                     value = scheduleNote,
                     onValueChange = { scheduleNote = it },
-                    label = { Text("어디 가는지 알려주세요 (예: 친구 약속, 출근)") },
-                    singleLine = false,
-                    maxLines = 2,
+                    label = { Text("일정 메모 (선택)") },
+                    placeholder = { Text("예: 친구 약속, 발표") },
+                    singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("schedule_note_input")
@@ -473,14 +476,19 @@ fun TpoStylingScreen(
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AtelierMidnight,
-                        contentColor = AtelierChampagne
+                        contentColor = ZigzagCtaText
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp)
+                        .height(50.dp)
                         .testTag("generate_tpo_coordi_button")
                 ) {
-                    Text("옷 추천받기")
+                    Text(
+                        text = "AI 코디 추천",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = ZigzagCtaText
+                    )
                 }
             }
         }
@@ -579,10 +587,10 @@ fun TpoStylingScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "아직 저장된 코디 기록이 없습니다. 위에서 날씨 맞춤 추천 조합을 저장하거나 AI 코디를 생성해보세요!",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "저장된 코디가 없어요. 추천 룩을 저장해보세요.",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(18.dp)
+                    modifier = Modifier.padding(16.dp)
                 )
             }
         } else {
@@ -629,7 +637,7 @@ private fun WeatherWardrobeSuggestionCard(
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
                             .background(AtelierMidnight),
                         contentAlignment = Alignment.Center
@@ -638,18 +646,25 @@ private fun WeatherWardrobeSuggestionCard(
                             imageVector = Icons.Default.Thermostat,
                             contentDescription = null,
                             tint = AtelierChampagne,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "오늘 날씨에 딱 맞는 내 옷",
+                            text = "오늘 날씨 매칭",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+                        val thicknessKo = weather.recommendedThickness.joinToString("·") {
+                            when (it) {
+                                "LIGHT" -> "얇음"
+                                "HEAVY" -> "두꺼움"
+                                else -> "보통"
+                            }
+                        }
                         Text(
-                            text = "${weather.cityLabelKo} ${weather.temperatureC.toInt()}°C · 권장 두께: ${weather.recommendedThickness.joinToString("/")} · 적합 의류 ${suggestion.suitableGarments.size}벌",
+                            text = "$thicknessKo 두께 · ${suggestion.suitableGarments.size}벌 추천",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -842,8 +857,13 @@ private fun BestWeatherSlotMiniCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            val thicknessLabel = when (matched.garment.thickness) {
+                "LIGHT" -> "얇음"
+                "HEAVY" -> "두꺼움"
+                else -> "보통"
+            }
             Text(
-                text = "${matched.garment.colorName} · ${matched.garment.thickness}",
+                text = "${matched.garment.colorName} · $thicknessLabel",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1
@@ -905,6 +925,8 @@ private fun WeatherMatchedGarmentRow(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = scoreColor,
                                 fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -915,17 +937,19 @@ private fun WeatherMatchedGarmentRow(
                                 shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
-                                    text = "카테고리 1위",
+                                    text = "1위",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = AtelierMidnight,
                                     fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(3.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
                         text = "[${g.brand}] ${g.name}",
@@ -935,13 +959,29 @@ private fun WeatherMatchedGarmentRow(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    Text(
-                        text = matched.matchReasons.joinToString(" · "),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.horizontalScroll(rememberScrollState())
+                    ) {
+                        matched.matchReasons.take(2).forEach { reasonTag ->
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color.White,
+                                border = BorderStroke(0.5.dp, ZigzagHairline)
+                            ) {
+                                Text(
+                                    text = reasonTag,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    color = ZigzagSecondary,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -951,7 +991,7 @@ private fun WeatherMatchedGarmentRow(
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("+1회 착용", style = MaterialTheme.typography.labelMedium)
+                    Text("+1 입기", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
                 }
             }
 
@@ -996,9 +1036,11 @@ private fun RecommendedCoordiShowcaseCard(
                     shape = RoundedCornerShape(50)
                 ) {
                     Text(
-                        text = "AI 매칭 점수 ${rec.fitScore}점 · #${rec.tpoOccasion}",
+                        text = "${rec.fitScore}점 · #${rec.tpoOccasion}",
                         style = MaterialTheme.typography.labelLarge,
                         color = AtelierSage,
+                        maxLines = 1,
+                        softWrap = false,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
                     )
                 }
@@ -1075,7 +1117,7 @@ private fun RecommendedCoordiShowcaseCard(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = "🌤 날씨 매칭 포인트: ${rec.weatherMatchReason}",
+                        text = "🌤 ${rec.weatherMatchReason}",
                         style = MaterialTheme.typography.labelLarge
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -1091,15 +1133,22 @@ private fun RecommendedCoordiShowcaseCard(
             Button(
                 onClick = {
                     onSaveAndWear()
-                    showFintechToast(context, "추천 코디가 저장되고 착용 횟수가 기록되었어요")
+                    showFintechToast(context, "추천 코디가 저장되고 착용이 기록됐어요")
                 },
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = ZigzagCtaBlack,
+                    contentColor = ZigzagCtaText
+                ),
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
                     .testTag("wear_recommended_coordi_button")
             ) {
-                Text("오늘 이 추천 코디 입기 (착용 횟수 & CPW 자동 갱신)")
+                Text(
+                    text = "이 코디 입기 · +1",
+                    color = ZigzagCtaText
+                )
             }
         }
     }

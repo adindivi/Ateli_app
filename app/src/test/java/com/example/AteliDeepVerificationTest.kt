@@ -11,9 +11,9 @@ import com.example.ui.components.AclosetWardrobeAnalyzer
 import com.example.ui.components.AvatarBodyMetrics
 import com.example.ui.components.ColorHarmonyAnalyzer
 import com.example.ui.components.EnterpriseB2BAnalyzer
-import com.example.ui.components.StitchFixPurchaseAdvisor
 import com.example.ui.components.StylebookCapsuleBuilder
 import com.example.ui.components.TailoringFitSpecEngine
+import com.example.ui.components.WardrobeCompatibilityAdvisor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -25,8 +25,8 @@ import org.junit.Test
  * Deep verification unit test suite covering:
  * 1. Parametric Avatar Body Metrics & AI Auto Body-Shape Classification
  * 2. Multi-Factor Weather-to-Wardrobe Suitability Scoring & Category Ranking
- * 3. Garment CPW (Cost Per Wear), Closet Sleeper Detection, and Firestore Serialization
- * 4. 4-Stage Industry Benchmark Engines (Acloset, Whering, Stylebook, Stitch Fix)
+ * 3. Garment Wear Utilization, Closet Sleeper Detection, and Firestore Serialization
+ * 4. 4-Stage Industry Benchmark Engines (Acloset, Whering, Stylebook, Wardrobe Gap Matching)
  */
 class AteliDeepVerificationTest {
 
@@ -165,28 +165,24 @@ class AteliDeepVerificationTest {
     }
 
     @Test
-    fun garmentCostPerWear_andFirestoreSerialization_meetSchemaRules() {
+    fun garmentUtilization_andFirestoreSerialization_meetSchemaRules() {
         val unworn = Garment(
             id = "g_unworn",
             name = "에어리 바람막이",
             brand = "아크테릭스",
             category = "OUTER",
-            purchasePrice = 320000L,
             wearCount = 0L
         )
         assertTrue(unworn.isUnwornClosetSleeper)
-        assertEquals(320000L, unworn.costPerWear)
-        assertEquals(0, unworn.valueRecoveryPercent)
 
         val worn16 = unworn.copy(wearCount = 16L)
         assertFalse(worn16.isUnwornClosetSleeper)
-        assertEquals(20000L, worn16.costPerWear)
-        assertTrue(worn16.valueRecoveryPercent > 0)
 
         val map = worn16.toCreateMap("uid_123")
         assertEquals("uid_123", map["userId"])
         assertEquals("OUTER", map["category"])
-        assertEquals(320000L, map["purchasePrice"])
+        assertEquals(16L, map["wearCount"])
+        assertFalse(map.containsKey("purchasePrice"))
 
         val outfitMap = SavedOutfit(
             title = "출근 베스트 코디",
@@ -205,11 +201,10 @@ class AteliDeepVerificationTest {
         }
         val target = starters.first()
 
-        // 1. Acloset Break-Even & Net Effective CPW
-        val breakEven = AclosetWardrobeAnalyzer.analyzeGarmentBreakEven(target, starters, targetCpwGoal = 10_000L)
-        assertTrue(breakEven.estimatedResaleValue > 0L)
-        assertTrue(breakEven.netEffectiveCpw <= breakEven.currentCpw)
-        assertTrue(breakEven.compatibleItems.isNotEmpty())
+        // 1. Acloset Garment Styling & Cross-Coordination Match
+        val stylingAnalysis = AclosetWardrobeAnalyzer.analyzeGarmentStyling(target, starters)
+        assertTrue(stylingAnalysis.progressRatio in 0f..1f)
+        assertTrue(stylingAnalysis.compatibleItems.isNotEmpty())
 
         // 2. Whering 6-Formula Color Harmony & Body Shape Silhouette Balance
         val outer = starters.firstOrNull { it.category == "OUTER" }
@@ -240,12 +235,11 @@ class AteliDeepVerificationTest {
         assertTrue(capsule.estimatedTotalWeightKg > 0f)
         assertEquals(3, capsule.dailySchedulePreview.size)
 
-        // 4. Stitch Fix Pre-Purchase Wardrobe Compatibility Simulator
-        val candidate = StitchFixPurchaseAdvisor.presetCandidates.first()
-        val verdict = StitchFixPurchaseAdvisor.evaluateCandidatePurchase(candidate, starters)
+        // 4. Wardrobe Gap & Compatibility Simulator
+        val candidate = WardrobeCompatibilityAdvisor.presetCandidates.first()
+        val verdict = WardrobeCompatibilityAdvisor.evaluateStyleCandidate(candidate, starters)
         assertTrue(verdict.synergyScore in 35..98)
         assertTrue(verdict.newOutfitCombinationsCreated > 0)
-        assertEquals(candidate.expectedPrice / 10L, verdict.expectedCpwAt10Wears)
     }
 
     @Test
@@ -267,7 +261,7 @@ class AteliDeepVerificationTest {
 
         val audit = EnterpriseB2BAnalyzer.generateEnterpriseAudit(starters)
         assertEquals(starters.size, audit.totalSkuCount)
-        assertTrue(audit.estimatedNetAssetValueKrw > 0L)
+        assertTrue(audit.totalWearCount > 0L)
         assertTrue(audit.carbonSavedKgCo2e > 0f)
         assertTrue(audit.csvPayload.contains("SKU_ID,BRAND,NAME"))
 

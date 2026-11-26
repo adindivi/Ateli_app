@@ -32,7 +32,6 @@ class WardrobeRepositoryRuleTest : FirestoreEmulatorTestBase() {
             thickness = "MEDIUM",
             waterResistant = true,
             tpoTags = listOf("출근", "데이트"),
-            purchasePrice = 139000L,
             wearCount = 3L,
             sourceType = "RECEIPT_AUTO",
             receiptStore = "MUSINSA"
@@ -105,7 +104,6 @@ class WardrobeRepositoryRuleTest : FirestoreEmulatorTestBase() {
                     thickness = "MEDIUM",
                     waterResistant = false,
                     tpoTags = listOf("출근"),
-                    purchasePrice = 200000L,
                     wearCount = 1L,
                     sourceType = "CAMERA_AI"
                 )

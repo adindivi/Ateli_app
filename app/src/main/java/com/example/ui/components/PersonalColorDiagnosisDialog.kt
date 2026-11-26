@@ -143,7 +143,7 @@ fun PersonalColorDiagnosisDialog(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "얼굴 피부톤을 분석해 착용 시 가장 빛나는 컬러를 찾아드려요",
+                            text = "피부톤 맞춤 컬러 찾기",
                             style = TextStyle(
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Normal,
@@ -362,7 +362,7 @@ fun PersonalColorDiagnosisDialog(
 
                             // 베스트 팔레트 스와치
                             Text(
-                                text = "베스트 컬러 팔레트 (Best)",
+                                text = "베스트 컬러",
                                 style = TextStyle(
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -392,7 +392,7 @@ fun PersonalColorDiagnosisDialog(
 
                             // 워스트 팔레트 스와치
                             Text(
-                                text = "피하면 좋은 워스트 컬러 (Avoid)",
+                                text = "피할 컬러",
                                 style = TextStyle(
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -488,7 +488,7 @@ fun PersonalColorDiagnosisDialog(
                         )
                     ) {
                         Text(
-                            text = "${selectedSeason.labelKo} 적용하고 옷장에 반영하기",
+                            text = "${selectedSeason.labelKo} 적용",
                             style = TextStyle(
                                 fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Bold,
